@@ -1,4 +1,5 @@
 apply plugin: 'com.android.application'
+apply plugin: 'com.google.gms.google-services'
 
 android {
     compileSdkVersion 30
@@ -40,7 +41,15 @@ dependencies {
     def camerax_version = "1.0.0-beta05"
     implementation "androidx.camera:camera-camera2:${camerax_version}"
     implementation "androidx.camera:camera-lifecycle:${camerax_version}"
-    implementation"androidx.camera:camera-view:1.0.0-alpha12"
+    implementation "androidx.camera:camera-view:1.0.0-alpha12"
     implementation "androidx.camera:camera-extensions:1.0.0-alpha12"
 
+    implementation 'com.google.firebase:firebase-ml-vision:24.0.3'
+    // If you want to detect face contours (landmark detection and classification
+    // don't require this additional model):
+    implementation 'com.google.firebase:firebase-ml-vision-face-model:20.0.1'
+
+    implementation 'org.tensorflow:tensorflow-lite:2.2.0'
+    implementation 'org.tensorflow:tensorflow-lite-support:0.0.0-nightly'
+    implementation 'com.google.firebase:firebase-analytics:17.5.0'
 }
