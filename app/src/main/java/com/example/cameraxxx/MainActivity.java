@@ -70,7 +70,7 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         mPreviewView = findViewById(R.id.previewView);
-        captureImage = findViewById(R.id.captureImg);
+        captureImage = findViewById(R.id.captureImg); 
 
         //check if permission is granted
         if(allPermissionsGranted()){
