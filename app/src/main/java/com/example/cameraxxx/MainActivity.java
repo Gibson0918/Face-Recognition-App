@@ -19,6 +19,7 @@ import androidx.core.content.ContextCompat;
 import androidx.lifecycle.LifecycleOwner;
 
 import android.annotation.SuppressLint;
+import android.content.Context;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.os.Environment;
@@ -27,6 +28,7 @@ import android.os.Looper;
 import android.util.Size;
 import android.view.TextureView;
 import android.view.ViewGroup;
+import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.Toast;
 
@@ -47,6 +49,7 @@ public class MainActivity extends AppCompatActivity {
     private final String[] REQUIRED_PERMISSIONS = new String[]{"android.permission.CAMERA", "android.permission.WRITE_EXTERNAL_STORAGE"};
     private TextureView textureView;
     private ImageView imageView;
+    private Button button;
 
 
     @Override
@@ -56,6 +59,8 @@ public class MainActivity extends AppCompatActivity {
 
         textureView = findViewById(R.id.textureView);
         imageView  = findViewById(R.id.imageView);
+        button = findViewById(R.id.button);
+
 
 
         if(allPermissionsGranted()){
@@ -98,7 +103,10 @@ public class MainActivity extends AppCompatActivity {
             vg.removeView(textureView);
             vg.addView(textureView, 0);
             textureView.setSurfaceTexture(output.getSurfaceTexture());
+            imageView.invalidate();
         });
+
+
 
         ImageAnalysisConfig imageAnalysisConfig = new ImageAnalysisConfig
                 .Builder()
@@ -110,7 +118,7 @@ public class MainActivity extends AppCompatActivity {
 
         ImageAnalysis imageAnalysis = new ImageAnalysis(imageAnalysisConfig);
         imageAnalysis.setAnalyzer(Runnable::run,
-                new FaceTrackingAnalyzer(textureView, imageView, CameraX.LensFacing.FRONT));
+                new FaceTrackingAnalyzer(textureView, imageView, button,CameraX.LensFacing.FRONT,this));
         CameraX.bindToLifecycle(this, preview, imageAnalysis);
     }
 

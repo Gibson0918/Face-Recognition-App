@@ -1,5 +1,10 @@
 package com.example.cameraxxx;
 
+import android.app.Activity;
+import android.app.AlertDialog;
+import android.content.Context;
+import android.content.DialogInterface;
+import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
@@ -9,13 +14,22 @@ import android.graphics.PorterDuff;
 import android.graphics.Rect;
 import android.media.Image;
 import android.util.Log;
+import android.view.LayoutInflater;
 import android.view.TextureView;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.Button;
+import android.widget.EditText;
 import android.widget.ImageView;
+import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
+import androidx.appcompat.widget.ActivityChooserView;
 import androidx.camera.core.CameraX;
 import androidx.camera.core.ImageAnalysis;
 import androidx.camera.core.ImageProxy;
+import androidx.camera.core.Preview;
 
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
@@ -32,7 +46,7 @@ import com.google.firebase.ml.vision.face.FirebaseVisionFaceDetectorOptions;
 import java.util.List;
 
 
-public class FaceTrackingAnalyzer implements ImageAnalysis.Analyzer {
+public class FaceTrackingAnalyzer extends MainActivity implements ImageAnalysis.Analyzer {
 
     private TextureView textureView;
     private  ImageView imageView;
@@ -43,12 +57,16 @@ public class FaceTrackingAnalyzer implements ImageAnalysis.Analyzer {
     private float heightScaleFactor = 1.0f;
     private CameraX.LensFacing lens;
     private FirebaseVisionImage fbImage;
+    private Button button;
+    private Activity context;
 
 
-    public FaceTrackingAnalyzer(TextureView textureView, ImageView imageView, CameraX.LensFacing lens) {
+    public FaceTrackingAnalyzer(TextureView textureView, ImageView imageView, Button button, CameraX.LensFacing lens, Activity context) {
         this.textureView = textureView;
         this.imageView = imageView;
         this.lens = lens;
+        this.button = button;
+        this.context = context;
     }
 
     @Override
@@ -59,9 +77,10 @@ public class FaceTrackingAnalyzer implements ImageAnalysis.Analyzer {
         int rotation = degreesToFirebaseRotation(rotationDegrees);
         fbImage = FirebaseVisionImage.fromMediaImage(image.getImage(), rotation);
         initDrawingUtils();
-
         initDetector();
+
     }
+
 
     private void initDetector() {
         FirebaseVisionFaceDetectorOptions detectorOptions = new FirebaseVisionFaceDetectorOptions
@@ -72,8 +91,50 @@ public class FaceTrackingAnalyzer implements ImageAnalysis.Analyzer {
         faceDetector.detectInImage(fbImage).addOnSuccessListener(firebaseVisionFaces -> {
             if (!firebaseVisionFaces.isEmpty()) {
                 processFaces(firebaseVisionFaces);
+                if(firebaseVisionFaces.size() == 1) {
+                    button.setTextColor(Color.GREEN);
+                    button.setClickable(true);
+                    button.setOnClickListener(new View.OnClickListener() {
+                        @Override
+                        public void onClick(View view) {
+                            FirebaseVisionFace face = firebaseVisionFaces.get(0);
+                            Bitmap a = fbImage.getBitmap();
+                            Bitmap b = Bitmap.createBitmap(a, face.getBoundingBox().left, face.getBoundingBox().top, face.getBoundingBox().right - face.getBoundingBox().left, face.getBoundingBox().bottom - face.getBoundingBox().top);
+                            AlertDialog.Builder builder = new AlertDialog.Builder(context);
+                            LayoutInflater inflater = context.getLayoutInflater();
+                            View dialogLayout = inflater.inflate(R.layout.add_face_dialog, null);
+                            ImageView ivFace = dialogLayout.findViewById(R.id.dlg_image);
+                            TextView tvTitle = dialogLayout.findViewById(R.id.dlg_title);
+                            EditText etName = dialogLayout.findViewById(R.id.dlg_input);
+                            tvTitle.setText("Add Face");
+                            ivFace.setImageBitmap(b);
+                            etName.setHint("Input Name");
+                            builder.setPositiveButton("OK", new DialogInterface.OnClickListener() {
+                                @Override
+                                public void onClick(DialogInterface dialogInterface, int i) {
+                                    String name = etName.getText().toString();
+                                    if (name.isEmpty()) {
+                                        Toast.makeText(getApplicationContext(), "Please enter name", Toast.LENGTH_SHORT).show();
+                                    } else {
+                                        //Todo: Facial Recognition method to get embeddings and save it to a Hashmap
+
+                                        dialogInterface.dismiss();
+                                    }
+                                }
+                            });
+                            builder.setView(dialogLayout);
+                            builder.show();
+                        }
+                    });
+                }
+                else {
+                    button.setTextColor(Color.RED);
+                    button.setClickable(false);
+                }
             } else {
                 canvas.drawColor(Color.TRANSPARENT, PorterDuff.Mode.MULTIPLY);
+                button.setTextColor(Color.RED);
+                button.setClickable(false);
             }
         }).addOnFailureListener(e -> Log.i("sad", e.toString()));
     }
@@ -104,6 +165,7 @@ public class FaceTrackingAnalyzer implements ImageAnalysis.Analyzer {
             canvas.drawRect(box, paint);
         }
         imageView.setImageBitmap(bitmap);
+
     }
 
     private float translateY(float y) {
@@ -128,4 +190,6 @@ public class FaceTrackingAnalyzer implements ImageAnalysis.Analyzer {
                 throw new IllegalArgumentException("Rotation must be 0, 90, 180, or 270.");
         }
     }
+
+
 }
