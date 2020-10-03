@@ -11,6 +11,7 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.PorterDuff;
+import android.graphics.PorterDuffXfermode;
 import android.graphics.Rect;
 import android.media.Image;
 import android.os.Build;
@@ -75,7 +76,7 @@ public class FaceTrackingAnalyzer extends MainActivity implements ImageAnalysis.
     private Activity context;
     private FaceNet faceNet;
     private List<FaceRecognition> faceRecognitionList;
-    private Paint paintFace;
+    private Paint clearPaint;
 
 
 
@@ -97,14 +98,14 @@ public class FaceTrackingAnalyzer extends MainActivity implements ImageAnalysis.
         int rotation = degreesToFirebaseRotation(rotationDegrees);
         fbImage = FirebaseVisionImage.fromMediaImage(image.getImage(), rotation);
         initDrawingUtils();
-        initDetector();
+        initDetector(image);
         //image.close();
 
     }
 
 
     @RequiresApi(api = Build.VERSION_CODES.N)
-    private void initDetector() {
+    private void initDetector(ImageProxy imageProxy) {
         FirebaseVisionFaceDetectorOptions detectorOptions = new FirebaseVisionFaceDetectorOptions
                 .Builder()
                 .enableTracking()
@@ -163,8 +164,15 @@ public class FaceTrackingAnalyzer extends MainActivity implements ImageAnalysis.
                 canvas.drawColor(Color.TRANSPARENT, PorterDuff.Mode.MULTIPLY);
                 button.setTextColor(Color.RED);
                 button.setClickable(false);
+                imageView.setImageBitmap(abitmap);
             }
-        }).addOnFailureListener(e -> Log.i("sad", e.toString()));
+        }).addOnFailureListener(e -> Log.i("sad", e.toString())).addOnCompleteListener(new OnCompleteListener<List<FirebaseVisionFace>>() {
+            @Override
+            public void onComplete(@NonNull Task<List<FirebaseVisionFace>> task) {
+                imageProxy.close();
+
+            }
+        });
     }
 
     private void initDrawingUtils() {
@@ -180,6 +188,8 @@ public class FaceTrackingAnalyzer extends MainActivity implements ImageAnalysis.
                 paint.setTextSize(40);
                 widthScaleFactor = canvas.getWidth() / (fbImage.getBitmap().getWidth() * 1.0f);
                 heightScaleFactor = canvas.getHeight() / (fbImage.getBitmap().getHeight() * 1.0f);
+                clearPaint = new Paint();
+                clearPaint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.CLEAR));
             }
         }).start();
         /*bitmap = Bitmap.createBitmap(textureView.getWidth(), textureView.getHeight(), Bitmap.Config.ARGB_8888);
@@ -244,11 +254,11 @@ public class FaceTrackingAnalyzer extends MainActivity implements ImageAnalysis.
         imageView.setImageBitmap(abitmap);
     }
 
-    private float translateY(float y) {
+    private synchronized float translateY(float y) {
         return y * heightScaleFactor;
     }
 
-    private float translateX(float x) {
+    private synchronized float translateX(float x) {
             return x * widthScaleFactor;
     }
 

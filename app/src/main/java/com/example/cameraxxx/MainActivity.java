@@ -125,7 +125,7 @@ public class MainActivity extends AppCompatActivity {
             vg.removeView(textureView);
             vg.addView(textureView, 0);
             textureView.setSurfaceTexture(output.getSurfaceTexture());
-            imageView.invalidate();
+            
         });
 
 
