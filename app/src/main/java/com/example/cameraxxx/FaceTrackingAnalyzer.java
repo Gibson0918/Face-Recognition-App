@@ -210,30 +210,33 @@ public class FaceTrackingAnalyzer extends MainActivity implements ImageAnalysis.
 
     @RequiresApi(api = Build.VERSION_CODES.N)
     private synchronized void processFaces(List<FirebaseVisionFace> faces) throws ExecutionException, InterruptedException {
-        for (FirebaseVisionFace face : faces) {
-            Bitmap croppedFaceBitmap = getFaceBitmap(face);
-            if (croppedFaceBitmap == null) {
-                return;
-            }
-            else {
-                //Todo  have to  optimize the face recognition here too expensive
-                Future<FaceRecognition> faceRecognitionFutureTask = faceNet.recognizeFace(croppedFaceBitmap,faceRecognitionList);
-                FaceRecognition recognizeFace = faceRecognitionFutureTask.get();
-                       // FaceRecognition recognizeFace = faceNet.recognizeFace(croppedFaceBitmap,faceRecognitionList);
 
 
-                                canvas.drawText(recognizeFace.getName(),
-                                        translateX(face.getBoundingBox().right),
-                                        translateY(face.getBoundingBox().bottom),
-                                        paint);
+        if(faces.size() <= 3 ) {
+            for (FirebaseVisionFace face : faces) {
+
+                Bitmap croppedFaceBitmap = getFaceBitmap(face);
+                if (croppedFaceBitmap == null) {
+                    return;
+                } else {
+                    //Todo  have to  optimize the face recognition here too expensive
+                    Future<FaceRecognition> faceRecognitionFutureTask = faceNet.recognizeFace(croppedFaceBitmap, faceRecognitionList);
+                    FaceRecognition recognizeFace = faceRecognitionFutureTask.get();
+                    // FaceRecognition recognizeFace = faceNet.recognizeFace(croppedFaceBitmap,faceRecognitionList);
 
 
-                //FaceRecognition recognizeFace = faceNet.recognizeFace(croppedFaceBitmap,faceRecognitionList);
-                Rect box = new Rect((int) translateX(face.getBoundingBox().left),
-                        (int) translateY(face.getBoundingBox().top),
-                        (int) translateX(face.getBoundingBox().right),
-                        (int) translateY(face.getBoundingBox().bottom));
-                canvas.drawRect(box, paint);
+                    canvas.drawText(recognizeFace.getName(),
+                            translateX(face.getBoundingBox().right),
+                            translateY(face.getBoundingBox().bottom),
+                            paint);
+
+
+                    //FaceRecognition recognizeFace = faceNet.recognizeFace(croppedFaceBitmap,faceRecognitionList);
+                    Rect box = new Rect((int) translateX(face.getBoundingBox().left),
+                            (int) translateY(face.getBoundingBox().top),
+                            (int) translateX(face.getBoundingBox().right),
+                            (int) translateY(face.getBoundingBox().bottom));
+                    canvas.drawRect(box, paint);
 
                 /*if(recognizeFace == null) {
 
@@ -249,7 +252,14 @@ public class FaceTrackingAnalyzer extends MainActivity implements ImageAnalysis.
                             paint);
                 }*/
 
+                }
+
+
             }
+            //imageView.setImageBitmap(abitmap);
+        }
+        else {
+            canvas.drawColor(Color.TRANSPARENT, PorterDuff.Mode.MULTIPLY);
         }
         imageView.setImageBitmap(abitmap);
     }
