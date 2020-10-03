@@ -13,6 +13,7 @@ import android.graphics.Paint;
 import android.graphics.PorterDuff;
 import android.graphics.Rect;
 import android.media.Image;
+import android.os.Build;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.TextureView;
@@ -25,12 +26,14 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.RequiresApi;
 import androidx.appcompat.widget.ActivityChooserView;
 import androidx.camera.core.CameraX;
 import androidx.camera.core.ImageAnalysis;
 import androidx.camera.core.ImageProxy;
 import androidx.camera.core.Preview;
 
+import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.gms.tasks.Task;
@@ -43,14 +46,25 @@ import com.google.firebase.ml.vision.face.FirebaseVisionFaceDetector;
 import com.google.firebase.ml.vision.face.FirebaseVisionFaceDetectorOptions;
 
 
+import org.tensorflow.lite.Interpreter;
+
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
+import java.util.concurrent.FutureTask;
 
 
 public class FaceTrackingAnalyzer extends MainActivity implements ImageAnalysis.Analyzer {
 
     private TextureView textureView;
     private  ImageView imageView;
-    private Bitmap bitmap;
+    private Bitmap abitmap;
     private Canvas canvas;
     private Paint paint;
     private float widthScaleFactor = 1.0f;
@@ -59,18 +73,24 @@ public class FaceTrackingAnalyzer extends MainActivity implements ImageAnalysis.
     private FirebaseVisionImage fbImage;
     private Button button;
     private Activity context;
+    private FaceNet faceNet;
+    private List<FaceRecognition> faceRecognitionList;
+    private Paint paintFace;
 
 
-    public FaceTrackingAnalyzer(TextureView textureView, ImageView imageView, Button button, CameraX.LensFacing lens, Activity context) {
+
+    public FaceTrackingAnalyzer(TextureView textureView, ImageView imageView, Button button, CameraX.LensFacing lens, Activity context, FaceNet faceNet, List<FaceRecognition> faceRecognitionList) {
         this.textureView = textureView;
         this.imageView = imageView;
         this.lens = lens;
         this.button = button;
         this.context = context;
+        this.faceNet = faceNet;
+        this.faceRecognitionList = faceRecognitionList;
     }
 
     @Override
-    public void analyze(ImageProxy image, int rotationDegrees) {
+    public synchronized void analyze(ImageProxy image, int rotationDegrees) {
         if (image == null || image.getImage() == null) {
             return;
         }
@@ -78,10 +98,12 @@ public class FaceTrackingAnalyzer extends MainActivity implements ImageAnalysis.
         fbImage = FirebaseVisionImage.fromMediaImage(image.getImage(), rotation);
         initDrawingUtils();
         initDetector();
+        //image.close();
 
     }
 
 
+    @RequiresApi(api = Build.VERSION_CODES.N)
     private void initDetector() {
         FirebaseVisionFaceDetectorOptions detectorOptions = new FirebaseVisionFaceDetectorOptions
                 .Builder()
@@ -90,7 +112,13 @@ public class FaceTrackingAnalyzer extends MainActivity implements ImageAnalysis.
         FirebaseVisionFaceDetector faceDetector = FirebaseVision.getInstance().getVisionFaceDetector(detectorOptions);
         faceDetector.detectInImage(fbImage).addOnSuccessListener(firebaseVisionFaces -> {
             if (!firebaseVisionFaces.isEmpty()) {
-                processFaces(firebaseVisionFaces);
+                try {
+                    processFaces(firebaseVisionFaces);
+                } catch (ExecutionException e) {
+                    e.printStackTrace();
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
                 if(firebaseVisionFaces.size() == 1) {
                     button.setTextColor(Color.GREEN);
                     button.setClickable(true);
@@ -98,8 +126,7 @@ public class FaceTrackingAnalyzer extends MainActivity implements ImageAnalysis.
                         @Override
                         public void onClick(View view) {
                             FirebaseVisionFace face = firebaseVisionFaces.get(0);
-                            Bitmap a = fbImage.getBitmap();
-                            Bitmap b = Bitmap.createBitmap(a, face.getBoundingBox().left, face.getBoundingBox().top, face.getBoundingBox().right - face.getBoundingBox().left, face.getBoundingBox().bottom - face.getBoundingBox().top);
+                            Bitmap croppedFaceBitmap = getFaceBitmap(face);
                             AlertDialog.Builder builder = new AlertDialog.Builder(context);
                             LayoutInflater inflater = context.getLayoutInflater();
                             View dialogLayout = inflater.inflate(R.layout.add_face_dialog, null);
@@ -107,7 +134,7 @@ public class FaceTrackingAnalyzer extends MainActivity implements ImageAnalysis.
                             TextView tvTitle = dialogLayout.findViewById(R.id.dlg_title);
                             EditText etName = dialogLayout.findViewById(R.id.dlg_input);
                             tvTitle.setText("Add Face");
-                            ivFace.setImageBitmap(b);
+                            ivFace.setImageBitmap(croppedFaceBitmap);
                             etName.setHint("Input Name");
                             builder.setPositiveButton("OK", new DialogInterface.OnClickListener() {
                                 @Override
@@ -116,7 +143,8 @@ public class FaceTrackingAnalyzer extends MainActivity implements ImageAnalysis.
                                     if (name.isEmpty()) {
                                         Toast.makeText(getApplicationContext(), "Please enter name", Toast.LENGTH_SHORT).show();
                                     } else {
-                                        //Todo: Facial Recognition method to get embeddings and save it to a Hashmap
+                                        //Todo: Facial Recognition method to get embeddings and save it to a List
+                                        faceRecognitionList = faceNet.addFaceToRecognitionList(name,croppedFaceBitmap,faceRecognitionList);
 
                                         dialogInterface.dismiss();
                                     }
@@ -140,32 +168,80 @@ public class FaceTrackingAnalyzer extends MainActivity implements ImageAnalysis.
     }
 
     private void initDrawingUtils() {
-        bitmap = Bitmap.createBitmap(textureView.getWidth(), textureView.getHeight(), Bitmap.Config.ARGB_8888);
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                abitmap = Bitmap.createBitmap(textureView.getWidth(), textureView.getHeight(), Bitmap.Config.ARGB_8888);
+                canvas = new Canvas(abitmap);
+                paint = new Paint();
+                paint.setColor(Color.BLUE);
+                paint.setStyle(Paint.Style.STROKE);
+                paint.setStrokeWidth(2f);
+                paint.setTextSize(40);
+                widthScaleFactor = canvas.getWidth() / (fbImage.getBitmap().getWidth() * 1.0f);
+                heightScaleFactor = canvas.getHeight() / (fbImage.getBitmap().getHeight() * 1.0f);
+            }
+        }).start();
+        /*bitmap = Bitmap.createBitmap(textureView.getWidth(), textureView.getHeight(), Bitmap.Config.ARGB_8888);
         canvas = new Canvas(bitmap);
         paint = new Paint();
-        paint.setColor(Color.GREEN);
+        paint.setColor(Color.BLUE);
         paint.setStyle(Paint.Style.STROKE);
         paint.setStrokeWidth(2f);
         paint.setTextSize(40);
         widthScaleFactor = canvas.getWidth() / (fbImage.getBitmap().getWidth() * 1.0f);
         heightScaleFactor = canvas.getHeight() / (fbImage.getBitmap().getHeight() * 1.0f);
+        paintFace = new Paint();
+        paintFace.setColor(Color.GREEN);
+        paintFace.setStyle(Paint.Style.STROKE);
+        paintFace.setStrokeWidth(2f);
+        paint.setTextSize(40);*/
     }
 
-    private void processFaces(List<FirebaseVisionFace> faces) {
+    @RequiresApi(api = Build.VERSION_CODES.N)
+    private synchronized void processFaces(List<FirebaseVisionFace> faces) throws ExecutionException, InterruptedException {
         for (FirebaseVisionFace face : faces) {
+            Bitmap croppedFaceBitmap = getFaceBitmap(face);
+            if (croppedFaceBitmap == null) {
+                return;
+            }
+            else {
+                //Todo  have to  optimize the face recognition here too expensive
+                Future<FaceRecognition> faceRecognitionFutureTask = faceNet.recognizeFace(croppedFaceBitmap,faceRecognitionList);
+                FaceRecognition recognizeFace = faceRecognitionFutureTask.get();
+                       // FaceRecognition recognizeFace = faceNet.recognizeFace(croppedFaceBitmap,faceRecognitionList);
 
-            Rect box = new Rect((int) translateX(face.getBoundingBox().left),
-                    (int) translateY(face.getBoundingBox().top),
-                    (int) translateX(face.getBoundingBox().right),
-                    (int) translateY(face.getBoundingBox().bottom));
-            canvas.drawText(String.valueOf(face.getTrackingId()),
-                    translateX(face.getBoundingBox().right),
-                    translateY(face.getBoundingBox().bottom),
-                    paint);
-            canvas.drawRect(box, paint);
+
+                                canvas.drawText(recognizeFace.getName(),
+                                        translateX(face.getBoundingBox().right),
+                                        translateY(face.getBoundingBox().bottom),
+                                        paint);
+
+
+                //FaceRecognition recognizeFace = faceNet.recognizeFace(croppedFaceBitmap,faceRecognitionList);
+                Rect box = new Rect((int) translateX(face.getBoundingBox().left),
+                        (int) translateY(face.getBoundingBox().top),
+                        (int) translateX(face.getBoundingBox().right),
+                        (int) translateY(face.getBoundingBox().bottom));
+                canvas.drawRect(box, paint);
+
+                /*if(recognizeFace == null) {
+
+                    canvas.drawText("Unknown",
+                            translateX(face.getBoundingBox().right),
+                            translateY(face.getBoundingBox().bottom),
+                            paint);
+                }
+                else {
+                    canvas.drawText(recognizeFace.getName(),
+                            translateX(face.getBoundingBox().right),
+                            translateY(face.getBoundingBox().bottom),
+                            paint);
+                }*/
+
+            }
         }
-        imageView.setImageBitmap(bitmap);
-
+        imageView.setImageBitmap(abitmap);
     }
 
     private float translateY(float y) {
@@ -190,6 +266,40 @@ public class FaceTrackingAnalyzer extends MainActivity implements ImageAnalysis.
                 throw new IllegalArgumentException("Rotation must be 0, 90, 180, or 270.");
         }
     }
+
+    private Bitmap getFaceBitmap(FirebaseVisionFace face){
+
+        Bitmap originalFrame = fbImage.getBitmap();
+        Bitmap faceBitmap  =  null;
+        try {
+            faceBitmap = Bitmap.createBitmap(originalFrame, face.getBoundingBox().left, face.getBoundingBox().top, face.getBoundingBox().right - face.getBoundingBox().left, face.getBoundingBox().bottom - face.getBoundingBox().top);
+        }
+        catch (IllegalArgumentException  e){
+            Log.d("Err123",e.getMessage());
+        }
+
+        return faceBitmap;
+    }
+
+    private static class Recognition {
+        private String id;
+        private String title;
+        private Float distance;
+        private Object emb;
+
+
+        public Recognition(String id, String title, Float distance, Object emb) {
+            this.id = id;
+            this.title = title;
+            this.distance = distance;
+            this.emb = emb;
+        }
+
+
+    }
+
+
+
 
 
 }

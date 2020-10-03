@@ -21,6 +21,7 @@ import androidx.lifecycle.LifecycleOwner;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.pm.PackageManager;
+import android.content.res.AssetFileDescriptor;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
@@ -34,9 +35,18 @@ import android.widget.Toast;
 
 import com.google.common.util.concurrent.ListenableFuture;
 
+import org.tensorflow.lite.Interpreter;
+import org.tensorflow.lite.task.vision.classifier.ImageClassifier;
+
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.nio.MappedByteBuffer;
+import java.nio.channels.FileChannel;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
@@ -50,6 +60,8 @@ public class MainActivity extends AppCompatActivity {
     private TextureView textureView;
     private ImageView imageView;
     private Button button;
+    private FaceNet faceNet;
+    private List<FaceRecognition> faceRecognitionList;
 
 
     @Override
@@ -60,7 +72,17 @@ public class MainActivity extends AppCompatActivity {
         textureView = findViewById(R.id.textureView);
         imageView  = findViewById(R.id.imageView);
         button = findViewById(R.id.button);
-
+        //Todo Populate the faceRecognitionList on startup from SQLite'
+        //code here
+        faceRecognitionList = new ArrayList<>();
+        // Todo Load the mobileFaceNet Model
+        faceNet = null;
+        try {
+            faceNet = new FaceNet(getAssets());
+        }
+        catch (Exception e){
+            Toast.makeText(MainActivity.this, "Model not loaded successfully", Toast.LENGTH_SHORT).show();
+        }
 
 
         if(allPermissionsGranted()){
@@ -118,7 +140,7 @@ public class MainActivity extends AppCompatActivity {
 
         ImageAnalysis imageAnalysis = new ImageAnalysis(imageAnalysisConfig);
         imageAnalysis.setAnalyzer(Runnable::run,
-                new FaceTrackingAnalyzer(textureView, imageView, button,CameraX.LensFacing.FRONT,this));
+                new FaceTrackingAnalyzer(textureView, imageView, button,CameraX.LensFacing.FRONT,this, faceNet, faceRecognitionList));
         CameraX.bindToLifecycle(this, preview, imageAnalysis);
     }
 
@@ -156,4 +178,20 @@ public class MainActivity extends AppCompatActivity {
             }
         }
     }
+
+    private MappedByteBuffer loadModelFile() throws IOException {
+        AssetFileDescriptor fileDescriptor = this.getAssets().openFd("mobile_face_net.tflite");
+        FileInputStream fileInputStream = new FileInputStream(fileDescriptor.getFileDescriptor());
+        FileChannel fileChannel = fileInputStream.getChannel();
+        long startOffSets = fileDescriptor.getStartOffset();
+        long declaredLength = fileDescriptor.getDeclaredLength();
+        return fileChannel.map(FileChannel.MapMode.READ_ONLY,startOffSets,declaredLength);
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        faceNet.close();
+    }
+
 }

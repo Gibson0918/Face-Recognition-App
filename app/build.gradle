@@ -7,7 +7,7 @@ android {
 
     defaultConfig {
         applicationId "com.example.cameraxxx"
-        minSdkVersion 21
+        minSdkVersion 24
         targetSdkVersion 30
         versionCode 1
         versionName "1.0"
@@ -66,4 +66,7 @@ dependencies {
     implementation 'org.tensorflow:tensorflow-lite-task-text:0.0.0-nightly'
     implementation 'org.tensorflow:tensorflow-lite-support:0.0.0-nightly'
     implementation 'org.tensorflow:tensorflow-lite:0.0.0-nightly'
+
+    implementation 'org.tensorflow:tensorflow-lite:2.3.0'
+    implementation 'org.tensorflow:tensorflow-lite-gpu:2.3.0'
 }
