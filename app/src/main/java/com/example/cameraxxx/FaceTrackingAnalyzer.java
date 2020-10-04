@@ -91,7 +91,7 @@ public class FaceTrackingAnalyzer extends MainActivity implements ImageAnalysis.
     }
 
     @Override
-    public synchronized void analyze(ImageProxy image, int rotationDegrees) {
+    public void analyze(ImageProxy image, int rotationDegrees) {
         if (image == null || image.getImage() == null) {
             return;
         }
@@ -105,7 +105,7 @@ public class FaceTrackingAnalyzer extends MainActivity implements ImageAnalysis.
 
 
     @RequiresApi(api = Build.VERSION_CODES.N)
-    private void initDetector(ImageProxy imageProxy) {
+    private synchronized void initDetector(ImageProxy imageProxy) {
         FirebaseVisionFaceDetectorOptions detectorOptions = new FirebaseVisionFaceDetectorOptions
                 .Builder()
                 .enableTracking()
@@ -213,51 +213,41 @@ public class FaceTrackingAnalyzer extends MainActivity implements ImageAnalysis.
 
 
         if(faces.size() <= 3 ) {
+
             for (FirebaseVisionFace face : faces) {
 
                 Bitmap croppedFaceBitmap = getFaceBitmap(face);
                 if (croppedFaceBitmap == null) {
                     return;
                 } else {
-                    //Todo  have to  optimize the face recognition here too expensive
-                    Future<FaceRecognition> faceRecognitionFutureTask = faceNet.recognizeFace(croppedFaceBitmap, faceRecognitionList);
-                    FaceRecognition recognizeFace = faceRecognitionFutureTask.get();
-                    // FaceRecognition recognizeFace = faceNet.recognizeFace(croppedFaceBitmap,faceRecognitionList);
+
+                        //Todo  have to  optimize the face recognition here too expensive
+                        Future<FaceRecognition> faceRecognitionFutureTask = faceNet.recognizeFace(croppedFaceBitmap, faceRecognitionList);
+                        FaceRecognition recognizeFace = faceRecognitionFutureTask.get();
+                        // FaceRecognition recognizeFace = faceNet.recognizeFace(croppedFaceBitmap,faceRecognitionList);
 
 
-                    canvas.drawText(recognizeFace.getName(),
-                            translateX(face.getBoundingBox().right),
-                            translateY(face.getBoundingBox().bottom),
-                            paint);
+                        canvas.drawText(recognizeFace.getName(),
+                                translateX(face.getBoundingBox().right),
+                                translateY(face.getBoundingBox().bottom),
+                                paint);
+
+                        Log.d("face",recognizeFace.getName());
 
 
-                    //FaceRecognition recognizeFace = faceNet.recognizeFace(croppedFaceBitmap,faceRecognitionList);
-                    Rect box = new Rect((int) translateX(face.getBoundingBox().left),
-                            (int) translateY(face.getBoundingBox().top),
-                            (int) translateX(face.getBoundingBox().right),
-                            (int) translateY(face.getBoundingBox().bottom));
-                    canvas.drawRect(box, paint);
+                        //FaceRecognition recognizeFace = faceNet.recognizeFace(croppedFaceBitmap,faceRecognitionList);
+                        Rect box = new Rect((int) translateX(face.getBoundingBox().left),
+                                (int) translateY(face.getBoundingBox().top),
+                                (int) translateX(face.getBoundingBox().right),
+                                (int) translateY(face.getBoundingBox().bottom));
+                        canvas.drawRect(box, paint);
 
-                /*if(recognizeFace == null) {
 
-                    canvas.drawText("Unknown",
-                            translateX(face.getBoundingBox().right),
-                            translateY(face.getBoundingBox().bottom),
-                            paint);
-                }
-                else {
-                    canvas.drawText(recognizeFace.getName(),
-                            translateX(face.getBoundingBox().right),
-                            translateY(face.getBoundingBox().bottom),
-                            paint);
-                }*/
-
+                    }
                 }
 
 
             }
-            //imageView.setImageBitmap(abitmap);
-        }
         else {
             canvas.drawColor(Color.TRANSPARENT, PorterDuff.Mode.MULTIPLY);
         }

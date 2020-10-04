@@ -5,6 +5,7 @@ import android.content.res.AssetManager;
 import android.graphics.Bitmap;
 import android.media.FaceDetector;
 import android.os.Build;
+import android.util.Log;
 
 import androidx.annotation.CheckResult;
 import androidx.annotation.RequiresApi;
@@ -147,6 +148,8 @@ public class FaceNet {
         if(smallestDist >=1.0f){
             recognizedFace = new FaceRecognition("unknown",null);
         }
+        Log.d("face",recognizedFace.getName());
+        Log.d("face",  "dist: "+ smallestDist);
         completableFuture.complete(recognizedFace);
         return completableFuture;
     }
