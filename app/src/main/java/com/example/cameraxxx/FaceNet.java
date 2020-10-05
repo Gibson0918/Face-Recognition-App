@@ -27,18 +27,14 @@ import java.util.concurrent.Future;
 
 public class FaceNet {
     private static final String MODEL_PATH = "mobile_face_net.tflite";
-
-    private static final float IMAGE_MEAN = 127.5f;
-    private static final float IMAGE_STD = 127.5f;
-
     private static final int BATCH_SIZE = 1;
-    private static final int IMAGE_HEIGHT = 160;
-    private static final int IMAGE_WIDTH = 160;
+    private static final int IMAGE_HEIGHT = 112;
+    private static final int IMAGE_WIDTH = 112;
     private static final int NUM_CHANNELS = 3;
     private static final int NUM_BYTES_PER_CHANNEL = 4;
     private static final int EMBDDINNG_SIZE = 192;
 
-    private final int [] intValues = new int [112 * 112];
+    private final int [] intValues = new int [IMAGE_HEIGHT * IMAGE_WIDTH];
     private ByteBuffer imgData;
 
     private MappedByteBuffer tfliteModel;
@@ -46,7 +42,7 @@ public class FaceNet {
     private final Interpreter.Options tfliteOptions  = new Interpreter.Options();
     CompatibilityList compatibilityList = new CompatibilityList();
 
-
+    // Initiate face recognition model -> check whether device has a GPU to run inference else it will attempt to use 4 threads for inference.
     public FaceNet (AssetManager assetManager) throws IOException {
         tfliteModel = loadModelFile(assetManager);
         if(compatibilityList.isDelegateSupportedOnThisDevice()){
@@ -60,13 +56,14 @@ public class FaceNet {
 
         tflife = new Interpreter(tfliteModel, tfliteOptions);
         imgData = ByteBuffer.allocateDirect(BATCH_SIZE
-                * 112
-                * 112
+                * IMAGE_HEIGHT
+                * IMAGE_WIDTH
                 * NUM_CHANNELS
                 * NUM_BYTES_PER_CHANNEL);
         imgData.order(ByteOrder.nativeOrder());
     }
 
+    //Method to load the model into memory
     private MappedByteBuffer loadModelFile(AssetManager assetManager) throws IOException {
         AssetFileDescriptor fileDescriptor = assetManager.openFd(MODEL_PATH);
         FileInputStream inputStream = new FileInputStream(fileDescriptor.getFileDescriptor());
@@ -79,14 +76,13 @@ public class FaceNet {
     private void convertBitmapToByteBuffer(Bitmap bitmap) {
         if (imgData == null  ||  bitmap == null) {
             return;
-
         }
         imgData.rewind();
         bitmap.getPixels(intValues, 0 , bitmap.getWidth(), 0, 0, bitmap.getWidth(), bitmap.getHeight());
-        //Convert the image to float point (will look at quantized model in the future)
+        //Convert the image to floating point (will look at quantized model in the future)
         int pixel = 0;
-        for (int i = 0; i < 112; ++i) {
-            for (int j = 0; j < 112; ++j) {
+        for (int i = 0; i < IMAGE_HEIGHT; ++i) {
+            for (int j = 0; j < IMAGE_WIDTH; ++j) {
                 final int val = intValues[pixel++];
                 addPixelValue(val);
             }
@@ -100,17 +96,17 @@ public class FaceNet {
             imgData.putFloat((pixelValue & 0xFF) / 255.0f);
         }
         catch (BufferOverflowException e){
-
+            //Should never trigger this part (I think)
         }
     }
 
     private Bitmap resizedBitmap(Bitmap bitmap, int height, int width){
-
         return  Bitmap.createScaledBitmap(bitmap, width, height, true);
     }
 
+    //Method to run inference
     private float [][] run (Bitmap bitmap)  {
-        bitmap  = resizedBitmap(bitmap, 112, 112);
+        bitmap  = resizedBitmap(bitmap, IMAGE_HEIGHT, IMAGE_WIDTH);
         convertBitmapToByteBuffer(bitmap);
 
         float [][] faceEmbeddings = new float[1][192];
@@ -119,6 +115,7 @@ public class FaceNet {
         return faceEmbeddings;
     }
 
+    //Method to compare embeddings of each face detected to the face embeddings stored in the face recognition list
     @RequiresApi(api = Build.VERSION_CODES.N)
     public Future<FaceRecognition> recognizeFace(Bitmap bitmap, List<FaceRecognition> faceRecognitionList) {
         CompletableFuture<FaceRecognition> completableFuture = new CompletableFuture<>();
@@ -155,14 +152,9 @@ public class FaceNet {
     }
 
 
-
-
-
     public List<FaceRecognition> addFaceToRecognitionList(String name, Bitmap bitmap, List<FaceRecognition> faceRecognitionList ){
         float[][] faceEmbeddings = run(bitmap);
         FaceRecognition face = new FaceRecognition(name, faceEmbeddings);
-        //Todo Facial verification to check if the user has already been added
-        //Todo insert code
         faceRecognitionList.add(face);
         return faceRecognitionList;
     }

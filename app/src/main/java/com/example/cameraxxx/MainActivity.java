@@ -73,9 +73,9 @@ public class MainActivity extends AppCompatActivity {
         imageView  = findViewById(R.id.imageView);
         button = findViewById(R.id.button);
         //Todo Populate the faceRecognitionList on startup from SQLite'
-        //code here
+        //<<Thinking whether it is better to use firebase>>
         faceRecognitionList = new ArrayList<>();
-        // Todo Load the mobileFaceNet Model
+        // <<Load the facial recognition model  >>
         faceNet = null;
         try {
             faceNet = new FaceNet(getAssets());
@@ -84,7 +84,7 @@ public class MainActivity extends AppCompatActivity {
             Toast.makeText(MainActivity.this, "Model not loaded successfully", Toast.LENGTH_SHORT).show();
         }
 
-
+        //check permission for camera
         if(allPermissionsGranted()){
             textureView.post(this::startCamera); //start camera if permission has been granted by user
         } else{
@@ -104,6 +104,7 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    //method to start up camera and set up camera preview
     private void initCamera() {
         CameraX.unbindAll();
         PreviewConfig pc = new PreviewConfig
@@ -114,12 +115,6 @@ public class MainActivity extends AppCompatActivity {
 
         Preview preview = new Preview(pc);
 
-        preview.setOnPreviewOutputUpdateListener(new Preview.OnPreviewOutputUpdateListener() {
-            @Override
-            public void onUpdated(@NonNull Preview.PreviewOutput output) {
-
-            }
-        });
         preview.setOnPreviewOutputUpdateListener(output -> {
             ViewGroup vg = (ViewGroup) textureView.getParent();
             vg.removeView(textureView);
@@ -128,15 +123,11 @@ public class MainActivity extends AppCompatActivity {
             
         });
 
-
-
         ImageAnalysisConfig imageAnalysisConfig = new ImageAnalysisConfig
                 .Builder()
                 .setImageReaderMode(ImageAnalysis.ImageReaderMode.ACQUIRE_LATEST_IMAGE)
                 .setTargetResolution(new Size(textureView.getWidth(),textureView.getHeight()))
                 .setLensFacing(CameraX.LensFacing.BACK).build();
-
-
 
         ImageAnalysis imageAnalysis = new ImageAnalysis(imageAnalysisConfig);
         imageAnalysis.setAnalyzer(Runnable::run,
@@ -144,7 +135,7 @@ public class MainActivity extends AppCompatActivity {
         CameraX.bindToLifecycle(this, preview, imageAnalysis);
     }
 
-
+    //not required unless you want to save the bitmap to external storage
     public String getBatchDirectoryName() {
 
         String app_folder_path = "";
@@ -166,6 +157,7 @@ public class MainActivity extends AppCompatActivity {
         }
         return true;
     }
+
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
 
@@ -179,15 +171,16 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    private MappedByteBuffer loadModelFile() throws IOException {
+    /*private MappedByteBuffer loadModelFile() throws IOException {
         AssetFileDescriptor fileDescriptor = this.getAssets().openFd("mobile_face_net.tflite");
         FileInputStream fileInputStream = new FileInputStream(fileDescriptor.getFileDescriptor());
         FileChannel fileChannel = fileInputStream.getChannel();
         long startOffSets = fileDescriptor.getStartOffset();
         long declaredLength = fileDescriptor.getDeclaredLength();
         return fileChannel.map(FileChannel.MapMode.READ_ONLY,startOffSets,declaredLength);
-    }
+    }*/
 
+    //remove the loaded face recognition model from memory
     @Override
     protected void onDestroy() {
         super.onDestroy();

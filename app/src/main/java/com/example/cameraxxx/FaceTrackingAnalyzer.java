@@ -10,6 +10,7 @@ import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
+import android.graphics.Path;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffXfermode;
 import android.graphics.Rect;
@@ -67,7 +68,6 @@ public class FaceTrackingAnalyzer extends MainActivity implements ImageAnalysis.
     private  ImageView imageView;
     private Bitmap abitmap;
     private Canvas canvas;
-    private Paint paint;
     private float widthScaleFactor = 1.0f;
     private float heightScaleFactor = 1.0f;
     private CameraX.LensFacing lens;
@@ -76,8 +76,7 @@ public class FaceTrackingAnalyzer extends MainActivity implements ImageAnalysis.
     private Activity context;
     private FaceNet faceNet;
     private List<FaceRecognition> faceRecognitionList;
-    private Paint clearPaint;
-
+    private Paint paint, clearPaint, drawPaint, textPaint;
 
 
     public FaceTrackingAnalyzer(TextureView textureView, ImageView imageView, Button button, CameraX.LensFacing lens, Activity context, FaceNet faceNet, List<FaceRecognition> faceRecognitionList) {
@@ -99,27 +98,29 @@ public class FaceTrackingAnalyzer extends MainActivity implements ImageAnalysis.
         fbImage = FirebaseVisionImage.fromMediaImage(image.getImage(), rotation);
         initDrawingUtils();
         initDetector(image);
-        //image.close();
-
     }
 
 
     @RequiresApi(api = Build.VERSION_CODES.N)
     private synchronized void initDetector(ImageProxy imageProxy) {
+        //Initialize the face detector
         FirebaseVisionFaceDetectorOptions detectorOptions = new FirebaseVisionFaceDetectorOptions
                 .Builder()
                 .enableTracking()
                 .build();
         FirebaseVisionFaceDetector faceDetector = FirebaseVision.getInstance().getVisionFaceDetector(detectorOptions);
+        //retrieve a list of faces detected (firebaseVisionFaces) and perform facial recognition
         faceDetector.detectInImage(fbImage).addOnSuccessListener(firebaseVisionFaces -> {
             if (!firebaseVisionFaces.isEmpty()) {
                 try {
+                    //comparing face embeddings here
                     processFaces(firebaseVisionFaces);
                 } catch (ExecutionException e) {
                     e.printStackTrace();
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
+                //only allow faces to be added when there is only 1  face in the frame
                 if(firebaseVisionFaces.size() == 1) {
                     button.setTextColor(Color.GREEN);
                     button.setClickable(true);
@@ -161,92 +162,71 @@ public class FaceTrackingAnalyzer extends MainActivity implements ImageAnalysis.
                     button.setClickable(false);
                 }
             } else {
+                //clear the canvas/drawings of rect boxes when there are no faces detected
                 canvas.drawColor(Color.TRANSPARENT, PorterDuff.Mode.MULTIPLY);
                 button.setTextColor(Color.RED);
                 button.setClickable(false);
                 imageView.setImageBitmap(abitmap);
             }
-        }).addOnFailureListener(e -> Log.i("sad", e.toString())).addOnCompleteListener(new OnCompleteListener<List<FirebaseVisionFace>>() {
-            @Override
-            public void onComplete(@NonNull Task<List<FirebaseVisionFace>> task) {
-                imageProxy.close();
-
-            }
-        });
+        }).addOnFailureListener(e -> Log.i("sad", e.toString())
+        ).addOnCompleteListener(task -> imageProxy.close());
     }
 
+    //setting up the paint and canvas for the drawing of rect boxes
     private void initDrawingUtils() {
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                abitmap = Bitmap.createBitmap(textureView.getWidth(), textureView.getHeight(), Bitmap.Config.ARGB_8888);
-                canvas = new Canvas(abitmap);
-                paint = new Paint();
-                paint.setColor(Color.BLUE);
-                paint.setStyle(Paint.Style.STROKE);
-                paint.setStrokeWidth(2f);
-                paint.setTextSize(40);
-                widthScaleFactor = canvas.getWidth() / (fbImage.getBitmap().getWidth() * 1.0f);
-                heightScaleFactor = canvas.getHeight() / (fbImage.getBitmap().getHeight() * 1.0f);
-                clearPaint = new Paint();
-                clearPaint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.CLEAR));
-            }
+        new Thread(() -> {
+            abitmap = Bitmap.createBitmap(textureView.getWidth(), textureView.getHeight(), Bitmap.Config.ARGB_8888);
+            canvas = new Canvas(abitmap);
+            paint = new Paint();
+            paint.setColor(Color.BLUE);
+            paint.setStyle(Paint.Style.STROKE);
+            paint.setStrokeWidth(2f);
+            paint.setTextSize(40);
+            drawPaint = new Paint();
+            drawPaint.setColor(Color.BLACK);
+            drawPaint.setStyle(Paint.Style.FILL_AND_STROKE);
+            drawPaint.setStrokeWidth(2f);
+            textPaint = new Paint();
+            textPaint.setColor(Color.BLACK);
+            textPaint.setStyle(Paint.Style.FILL_AND_STROKE);
+            textPaint.setTextSize(40);
+            textPaint.setTextAlign(Paint.Align.CENTER);
+            textPaint.setStrokeWidth(2f);
+            widthScaleFactor = canvas.getWidth() / (fbImage.getBitmap().getWidth() * 1.0f);
+            heightScaleFactor = canvas.getHeight() / (fbImage.getBitmap().getHeight() * 1.0f);
+            clearPaint = new Paint();
+            clearPaint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.CLEAR));
         }).start();
-        /*bitmap = Bitmap.createBitmap(textureView.getWidth(), textureView.getHeight(), Bitmap.Config.ARGB_8888);
-        canvas = new Canvas(bitmap);
-        paint = new Paint();
-        paint.setColor(Color.BLUE);
-        paint.setStyle(Paint.Style.STROKE);
-        paint.setStrokeWidth(2f);
-        paint.setTextSize(40);
-        widthScaleFactor = canvas.getWidth() / (fbImage.getBitmap().getWidth() * 1.0f);
-        heightScaleFactor = canvas.getHeight() / (fbImage.getBitmap().getHeight() * 1.0f);
-        paintFace = new Paint();
-        paintFace.setColor(Color.GREEN);
-        paintFace.setStyle(Paint.Style.STROKE);
-        paintFace.setStrokeWidth(2f);
-        paint.setTextSize(40);*/
     }
 
     @RequiresApi(api = Build.VERSION_CODES.N)
     private synchronized void processFaces(List<FirebaseVisionFace> faces) throws ExecutionException, InterruptedException {
-
-
+        //I  have set facial recognition to be performed only when there are less than 3 faces in the frame
         if(faces.size() <= 3 ) {
-
             for (FirebaseVisionFace face : faces) {
-
+                // get a cropped bitmap of each face
                 Bitmap croppedFaceBitmap = getFaceBitmap(face);
                 if (croppedFaceBitmap == null) {
                     return;
                 } else {
-
                         //Todo  have to  optimize the face recognition here too expensive
                         Future<FaceRecognition> faceRecognitionFutureTask = faceNet.recognizeFace(croppedFaceBitmap, faceRecognitionList);
                         FaceRecognition recognizeFace = faceRecognitionFutureTask.get();
-                        // FaceRecognition recognizeFace = faceNet.recognizeFace(croppedFaceBitmap,faceRecognitionList);
-
 
                         canvas.drawText(recognizeFace.getName(),
-                                translateX(face.getBoundingBox().right),
-                                translateY(face.getBoundingBox().bottom),
-                                paint);
+                                translateX(face.getBoundingBox().centerX()),
+                                translateY(face.getBoundingBox().top),
+                                textPaint);
 
                         Log.d("face",recognizeFace.getName());
-
-
-                        //FaceRecognition recognizeFace = faceNet.recognizeFace(croppedFaceBitmap,faceRecognitionList);
+                        //draw a rect box around each face
                         Rect box = new Rect((int) translateX(face.getBoundingBox().left),
                                 (int) translateY(face.getBoundingBox().top),
                                 (int) translateX(face.getBoundingBox().right),
                                 (int) translateY(face.getBoundingBox().bottom));
                         canvas.drawRect(box, paint);
-
-
                     }
                 }
-
-
             }
         else {
             canvas.drawColor(Color.TRANSPARENT, PorterDuff.Mode.MULTIPLY);
@@ -287,29 +267,7 @@ public class FaceTrackingAnalyzer extends MainActivity implements ImageAnalysis.
         catch (IllegalArgumentException  e){
             Log.d("Err123",e.getMessage());
         }
-
         return faceBitmap;
     }
-
-    private static class Recognition {
-        private String id;
-        private String title;
-        private Float distance;
-        private Object emb;
-
-
-        public Recognition(String id, String title, Float distance, Object emb) {
-            this.id = id;
-            this.title = title;
-            this.distance = distance;
-            this.emb = emb;
-        }
-
-
-    }
-
-
-
-
 
 }
