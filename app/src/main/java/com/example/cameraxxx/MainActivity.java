@@ -26,6 +26,7 @@ import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
 import android.os.Looper;
+import android.util.Log;
 import android.util.Size;
 import android.view.TextureView;
 import android.view.ViewGroup;
@@ -33,7 +34,13 @@ import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.Toast;
 
+import com.google.android.gms.tasks.OnCompleteListener;
+import com.google.android.gms.tasks.Task;
 import com.google.common.util.concurrent.ListenableFuture;
+import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.QueryDocumentSnapshot;
+import com.google.firebase.firestore.QuerySnapshot;
+import com.google.firebase.ml.vision.face.FirebaseVisionFace;
 
 import org.tensorflow.lite.Interpreter;
 import org.tensorflow.lite.task.vision.classifier.ImageClassifier;
@@ -62,19 +69,45 @@ public class MainActivity extends AppCompatActivity {
     private Button button;
     private FaceNet faceNet;
     private List<FaceRecognition> faceRecognitionList;
-
+    private FirebaseFirestore db;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-
         textureView = findViewById(R.id.textureView);
         imageView  = findViewById(R.id.imageView);
         button = findViewById(R.id.button);
+        faceRecognitionList = new ArrayList<>();
         //Todo Populate the faceRecognitionList on startup from SQLite'
         //<<Thinking whether it is better to use firebase>>
-        faceRecognitionList = new ArrayList<>();
+
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                db = FirebaseFirestore.getInstance();
+                db.collection("Faces").get().addOnCompleteListener(new OnCompleteListener<QuerySnapshot>() {
+                    @Override
+                    public void onComplete(@NonNull Task<QuerySnapshot> task) {
+                        if(task.isSuccessful()) {
+                            for(QueryDocumentSnapshot documentSnapshot : task.getResult()) {
+                                float[][] faceEmbeddings = new float[1][192];
+                                //List<Float> embeddings = (List<Float>) documentSnapshot.get("Embeddings");
+                                List<Double> embeddings = (List<Double>) documentSnapshot.get("Embeddings");
+
+                                for(int i=0; i < 192; i++) {
+                                    assert embeddings != null;
+                                    faceEmbeddings[0][i] = embeddings.get(i).floatValue();
+                                }
+                                FaceRecognition face = new FaceRecognition(documentSnapshot.get("Name").toString(), faceEmbeddings);
+                                faceRecognitionList.add(face);
+                            }
+                        }
+                    }
+                });
+            }
+        }).start();
+
         // <<Load the facial recognition model  >>
         faceNet = null;
         try {
@@ -131,7 +164,7 @@ public class MainActivity extends AppCompatActivity {
 
         ImageAnalysis imageAnalysis = new ImageAnalysis(imageAnalysisConfig);
         imageAnalysis.setAnalyzer(Runnable::run,
-                new FaceTrackingAnalyzer(textureView, imageView, button,CameraX.LensFacing.FRONT,this, faceNet, faceRecognitionList));
+                new FaceTrackingAnalyzer(textureView, imageView, button,CameraX.LensFacing.FRONT,this, faceNet, faceRecognitionList,db));
         CameraX.bindToLifecycle(this, preview, imageAnalysis);
     }
 
@@ -142,9 +175,8 @@ public class MainActivity extends AppCompatActivity {
         app_folder_path = Environment.getExternalStorageDirectory().toString() + "/images";
         File dir = new File(app_folder_path);
         if (!dir.exists() && !dir.mkdirs()) {
-
+            //do something here
         }
-
         return app_folder_path;
     }
 
@@ -170,15 +202,6 @@ public class MainActivity extends AppCompatActivity {
             }
         }
     }
-
-    /*private MappedByteBuffer loadModelFile() throws IOException {
-        AssetFileDescriptor fileDescriptor = this.getAssets().openFd("mobile_face_net.tflite");
-        FileInputStream fileInputStream = new FileInputStream(fileDescriptor.getFileDescriptor());
-        FileChannel fileChannel = fileInputStream.getChannel();
-        long startOffSets = fileDescriptor.getStartOffset();
-        long declaredLength = fileDescriptor.getDeclaredLength();
-        return fileChannel.map(FileChannel.MapMode.READ_ONLY,startOffSets,declaredLength);
-    }*/
 
     //remove the loaded face recognition model from memory
     @Override

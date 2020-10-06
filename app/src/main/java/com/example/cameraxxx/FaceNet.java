@@ -8,7 +8,16 @@ import android.os.Build;
 import android.util.Log;
 
 import androidx.annotation.CheckResult;
+import androidx.annotation.NonNull;
 import androidx.annotation.RequiresApi;
+
+import com.google.android.gms.tasks.OnCompleteListener;
+import com.google.android.gms.tasks.OnFailureListener;
+import com.google.android.gms.tasks.OnSuccessListener;
+import com.google.android.gms.tasks.Task;
+import com.google.firebase.firestore.DocumentReference;
+import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.proto.TargetGlobal;
 
 import org.tensorflow.lite.Interpreter;
 import org.tensorflow.lite.gpu.CompatibilityList;
@@ -21,7 +30,10 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Future;
 
@@ -32,7 +44,7 @@ public class FaceNet {
     private static final int IMAGE_WIDTH = 112;
     private static final int NUM_CHANNELS = 3;
     private static final int NUM_BYTES_PER_CHANNEL = 4;
-    private static final int EMBDDINNG_SIZE = 192;
+    private static final int EMBEEDINNG_SIZE = 192;
 
     private final int [] intValues = new int [IMAGE_HEIGHT * IMAGE_WIDTH];
     private ByteBuffer imgData;
@@ -112,6 +124,7 @@ public class FaceNet {
         float [][] faceEmbeddings = new float[1][192];
         tflife.run(imgData, faceEmbeddings);
 
+
         return faceEmbeddings;
     }
 
@@ -127,7 +140,7 @@ public class FaceNet {
         for (FaceRecognition face : faceRecognitionList) {
             double distance = 0;
             float[][] recognizedFaceEmbeddings = face.getEmbedding();
-            for (int i = 0; i < EMBDDINNG_SIZE; i++) {
+            for (int i = 0; i < EMBEEDINNG_SIZE; i++) {
                 float diff = (unknownfaceEmbeddings[0][i] - recognizedFaceEmbeddings[0][i]);
                 float result = diff *diff;
                 distance += result;
@@ -137,7 +150,7 @@ public class FaceNet {
             if(count == 1) {
                 smallestDist = distance;
             }
-            if(smallestDist>= distance){
+            if(smallestDist> distance){
                 smallestDist= distance;
                 recognizedFace= face;
             }
@@ -152,10 +165,30 @@ public class FaceNet {
     }
 
 
-    public List<FaceRecognition> addFaceToRecognitionList(String name, Bitmap bitmap, List<FaceRecognition> faceRecognitionList ){
+    public List<FaceRecognition> addFaceToRecognitionList(String name, Bitmap bitmap, List<FaceRecognition> faceRecognitionList, FirebaseFirestore db){
         float[][] faceEmbeddings = run(bitmap);
         FaceRecognition face = new FaceRecognition(name, faceEmbeddings);
         faceRecognitionList.add(face);
+
+        Map<String, Object> faces = new HashMap<>();
+        faces.put("Name",face.getName());
+        List<Float> embeddingsList = new ArrayList<>();
+
+        for(int i = 0; i <192; i ++) {
+            embeddingsList.add(faceEmbeddings[0][i]);
+        }
+        faces.put("Embeddings",embeddingsList);
+        db.collection("Faces").add(faces).addOnSuccessListener(new OnSuccessListener<DocumentReference>() {
+            @Override
+            public void onSuccess(DocumentReference documentReference) {
+                Log.d("Success!",documentReference.getId());
+            }
+        }).addOnFailureListener(new OnFailureListener() {
+            @Override
+            public void onFailure(@NonNull Exception e) {
+                Log.d("Failed",e.toString());
+            }
+        });
         return faceRecognitionList;
     }
 
@@ -166,8 +199,5 @@ public class FaceNet {
         }
         tfliteModel = null;
     }
-
-
-
 
 }

@@ -40,6 +40,7 @@ import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.gms.tasks.Task;
 import com.google.auto.value.AutoValue;
+import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.ml.vision.FirebaseVision;
 import com.google.firebase.ml.vision.common.FirebaseVisionImage;
 import com.google.firebase.ml.vision.common.FirebaseVisionImageMetadata;
@@ -77,9 +78,11 @@ public class FaceTrackingAnalyzer extends MainActivity implements ImageAnalysis.
     private FaceNet faceNet;
     private List<FaceRecognition> faceRecognitionList;
     private Paint paint, clearPaint, drawPaint, textPaint;
+    private Rect bounds, box;
+    private FirebaseFirestore db;
 
 
-    public FaceTrackingAnalyzer(TextureView textureView, ImageView imageView, Button button, CameraX.LensFacing lens, Activity context, FaceNet faceNet, List<FaceRecognition> faceRecognitionList) {
+    public FaceTrackingAnalyzer(TextureView textureView, ImageView imageView, Button button, CameraX.LensFacing lens, Activity context, FaceNet faceNet, List<FaceRecognition> faceRecognitionList, FirebaseFirestore db) {
         this.textureView = textureView;
         this.imageView = imageView;
         this.lens = lens;
@@ -87,6 +90,7 @@ public class FaceTrackingAnalyzer extends MainActivity implements ImageAnalysis.
         this.context = context;
         this.faceNet = faceNet;
         this.faceRecognitionList = faceRecognitionList;
+        this.db = db;
     }
 
     @Override
@@ -146,8 +150,7 @@ public class FaceTrackingAnalyzer extends MainActivity implements ImageAnalysis.
                                         Toast.makeText(getApplicationContext(), "Please enter name", Toast.LENGTH_SHORT).show();
                                     } else {
                                         //Todo: Facial Recognition method to get embeddings and save it to a List
-                                        faceRecognitionList = faceNet.addFaceToRecognitionList(name,croppedFaceBitmap,faceRecognitionList);
-
+                                        faceRecognitionList = faceNet.addFaceToRecognitionList(name,croppedFaceBitmap,faceRecognitionList,db);
                                         dialogInterface.dismiss();
                                     }
                                 }
@@ -183,9 +186,12 @@ public class FaceTrackingAnalyzer extends MainActivity implements ImageAnalysis.
             paint.setStrokeWidth(2f);
             paint.setTextSize(40);
             drawPaint = new Paint();
-            drawPaint.setColor(Color.BLACK);
+            drawPaint.setColor(Color.WHITE);
             drawPaint.setStyle(Paint.Style.FILL_AND_STROKE);
             drawPaint.setStrokeWidth(2f);
+            drawPaint.setTextAlign(Paint.Align.CENTER);
+            //to set opacity of text background
+            //drawPaint.setAlpha(200);
             textPaint = new Paint();
             textPaint.setColor(Color.BLACK);
             textPaint.setStyle(Paint.Style.FILL_AND_STROKE);
@@ -196,13 +202,14 @@ public class FaceTrackingAnalyzer extends MainActivity implements ImageAnalysis.
             heightScaleFactor = canvas.getHeight() / (fbImage.getBitmap().getHeight() * 1.0f);
             clearPaint = new Paint();
             clearPaint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.CLEAR));
+            bounds = new Rect();
         }).start();
     }
 
     @RequiresApi(api = Build.VERSION_CODES.N)
     private synchronized void processFaces(List<FirebaseVisionFace> faces) throws ExecutionException, InterruptedException {
         //I  have set facial recognition to be performed only when there are less than 3 faces in the frame
-        if(faces.size() <= 3 ) {
+        if(faces.size() <= 4 ) {
             for (FirebaseVisionFace face : faces) {
                 // get a cropped bitmap of each face
                 Bitmap croppedFaceBitmap = getFaceBitmap(face);
@@ -213,14 +220,20 @@ public class FaceTrackingAnalyzer extends MainActivity implements ImageAnalysis.
                         Future<FaceRecognition> faceRecognitionFutureTask = faceNet.recognizeFace(croppedFaceBitmap, faceRecognitionList);
                         FaceRecognition recognizeFace = faceRecognitionFutureTask.get();
 
+                        textPaint.getTextBounds(recognizeFace.getName(),0,recognizeFace.getName().length(),bounds);
+                        canvas.drawRect((int) translateX(face.getBoundingBox().left),
+                                (int) translateY(face.getBoundingBox().top - bounds.height()+10),
+                                (int) translateX(face.getBoundingBox().right),
+                                (int) translateY(face.getBoundingBox().top),drawPaint);
+
                         canvas.drawText(recognizeFace.getName(),
                                 translateX(face.getBoundingBox().centerX()),
-                                translateY(face.getBoundingBox().top),
+                                translateY(face.getBoundingBox().top-5),
                                 textPaint);
 
                         Log.d("face",recognizeFace.getName());
                         //draw a rect box around each face
-                        Rect box = new Rect((int) translateX(face.getBoundingBox().left),
+                        box = new Rect((int) translateX(face.getBoundingBox().left),
                                 (int) translateY(face.getBoundingBox().top),
                                 (int) translateX(face.getBoundingBox().right),
                                 (int) translateY(face.getBoundingBox().bottom));
