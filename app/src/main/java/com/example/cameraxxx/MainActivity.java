@@ -55,6 +55,7 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
+import java.util.Objects;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
@@ -82,6 +83,7 @@ public class MainActivity extends AppCompatActivity {
         //Todo Populate the faceRecognitionList on startup from SQLite'
         //<<Thinking whether it is better to use firebase>>
 
+        //running fireStore request on a new thread
         new Thread(new Runnable() {
             @Override
             public void run() {
@@ -90,7 +92,7 @@ public class MainActivity extends AppCompatActivity {
                     @Override
                     public void onComplete(@NonNull Task<QuerySnapshot> task) {
                         if(task.isSuccessful()) {
-                            for(QueryDocumentSnapshot documentSnapshot : task.getResult()) {
+                            for(QueryDocumentSnapshot documentSnapshot : Objects.requireNonNull(task.getResult())) {
                                 float[][] faceEmbeddings = new float[1][192];
                                 //List<Float> embeddings = (List<Float>) documentSnapshot.get("Embeddings");
                                 List<Double> embeddings = (List<Double>) documentSnapshot.get("Embeddings");
