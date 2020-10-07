@@ -134,8 +134,8 @@ public class FaceNet {
         CompletableFuture<FaceRecognition> completableFuture = new CompletableFuture<>();
         FaceRecognition recognizedFace = new FaceRecognition("unknown",null);
 
-        double smallestDist = 0;
-        int count = 0;
+        double smallestDist = Double.MAX_VALUE;
+        
         float[][] unknownfaceEmbeddings = run(bitmap);
         for (FaceRecognition face : faceRecognitionList) {
             double distance = 0;
@@ -146,10 +146,7 @@ public class FaceNet {
                 distance += result;
             }
             distance =  Math.sqrt(distance);
-            count += 1;
-            if(count == 1) {
-                smallestDist = distance;
-            }
+
             if(smallestDist> distance){
                 smallestDist= distance;
                 recognizedFace= face;
@@ -165,7 +162,7 @@ public class FaceNet {
     }
 
 
-    public List<FaceRecognition> addFaceToRecognitionList(String name, Bitmap bitmap, List<FaceRecognition> faceRecognitionList, FirebaseFirestore db){
+    public List<FaceRecognition> addFaceToRecognitionList(String name, Bitmap bitmap, List<FaceRecognition> faceRecognitionList, FirebaseFirestore db, String emailAddr){
         float[][] faceEmbeddings = run(bitmap);
         FaceRecognition face = new FaceRecognition(name, faceEmbeddings);
         faceRecognitionList.add(face);
@@ -178,7 +175,7 @@ public class FaceNet {
             embeddingsList.add(faceEmbeddings[0][i]);
         }
         faces.put("Embeddings",embeddingsList);
-        db.collection("Faces").add(faces).addOnSuccessListener(new OnSuccessListener<DocumentReference>() {
+        db.collection(emailAddr).add(faces).addOnSuccessListener(new OnSuccessListener<DocumentReference>() {
             @Override
             public void onSuccess(DocumentReference documentReference) {
                 Log.d("Success!",documentReference.getId());

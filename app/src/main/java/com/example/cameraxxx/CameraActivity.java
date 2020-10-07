@@ -17,16 +17,22 @@ import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
 import android.annotation.SuppressLint;
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.os.Environment;
 import android.util.Size;
 import android.view.TextureView;
+import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.Toast;
 
+import com.google.android.gms.auth.api.signin.GoogleSignIn;
+import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
+import com.google.android.gms.auth.api.signin.GoogleSignInClient;
+import com.google.android.gms.auth.api.signin.GoogleSignInOptions;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
 import com.google.firebase.firestore.FirebaseFirestore;
@@ -47,10 +53,13 @@ public class CameraActivity extends AppCompatActivity {
     private final String[] REQUIRED_PERMISSIONS = new String[]{"android.permission.CAMERA", "android.permission.WRITE_EXTERNAL_STORAGE"};
     private TextureView textureView;
     private ImageView imageView;
-    private Button button;
+    private Button addButton, signOutButton;
     private FaceNet faceNet;
     private List<FaceRecognition> faceRecognitionList;
     private FirebaseFirestore db;
+    private GoogleSignInClient mGoogleSignInClient;
+    private String emailAddr;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -58,17 +67,18 @@ public class CameraActivity extends AppCompatActivity {
         setContentView(R.layout.activity_camera);
         textureView = findViewById(R.id.textureView);
         imageView  = findViewById(R.id.imageView);
-        button = findViewById(R.id.button);
+        addButton = findViewById(R.id.button);
+        signOutButton = findViewById(R.id.button2);
         faceRecognitionList = new ArrayList<>();
-        //Todo Populate the faceRecognitionList on startup from SQLite'
-        //<<Thinking whether it is better to use firebase>>
-
+        GoogleSignInAccount account = GoogleSignIn.getLastSignedInAccount(this);
+        emailAddr = account.getEmail();
+        //Populate the faceRecognitionList on startup from firestore'
         //running fireStore request on a new thread
         new Thread(new Runnable() {
             @Override
             public void run() {
                 db = FirebaseFirestore.getInstance();
-                db.collection("Faces").get().addOnCompleteListener(new OnCompleteListener<QuerySnapshot>() {
+                db.collection(emailAddr).get().addOnCompleteListener(new OnCompleteListener<QuerySnapshot>() {
                     @Override
                     public void onComplete(@NonNull Task<QuerySnapshot> task) {
                         if(task.isSuccessful()) {
@@ -105,6 +115,20 @@ public class CameraActivity extends AppCompatActivity {
         } else{
             ActivityCompat.requestPermissions(this, REQUIRED_PERMISSIONS, REQUEST_CODE_PERMISSIONS);
         }
+
+        GoogleSignInOptions gso = new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
+                .requestEmail()
+                .build();
+
+        mGoogleSignInClient = GoogleSignIn.getClient(this, gso);
+
+        signOutButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                signOut();
+
+            }
+        });
     }
 
 
@@ -146,7 +170,7 @@ public class CameraActivity extends AppCompatActivity {
 
         ImageAnalysis imageAnalysis = new ImageAnalysis(imageAnalysisConfig);
         imageAnalysis.setAnalyzer(Runnable::run,
-                new FaceTrackingAnalyzer(textureView, imageView, button,CameraX.LensFacing.FRONT,this, faceNet, faceRecognitionList,db));
+                new FaceTrackingAnalyzer(textureView, imageView, addButton,CameraX.LensFacing.FRONT,this, faceNet, faceRecognitionList,db,emailAddr));
         CameraX.bindToLifecycle(this, preview, imageAnalysis);
     }
 
@@ -190,6 +214,20 @@ public class CameraActivity extends AppCompatActivity {
     protected void onDestroy() {
         super.onDestroy();
         faceNet.close();
+    }
+
+    private void signOut() {
+
+        mGoogleSignInClient.signOut()
+                .addOnCompleteListener(this, new OnCompleteListener<Void>() {
+                    @Override
+                    public void onComplete(@NonNull Task<Void> task) {
+                        Toast.makeText(CameraActivity.this, "Signed out successfully", Toast.LENGTH_LONG).show();
+                        Intent intent = new Intent(CameraActivity.this, LoginActivity.class);
+                        startActivity(intent);
+                        finish();
+                    }
+                });
     }
 
 }

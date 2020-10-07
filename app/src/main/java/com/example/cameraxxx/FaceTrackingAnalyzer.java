@@ -57,9 +57,10 @@ public class FaceTrackingAnalyzer extends CameraActivity implements ImageAnalysi
     private Paint paint, clearPaint, drawPaint, textPaint;
     private Rect bounds, box;
     private FirebaseFirestore db;
+    private String emailAddr;
 
 
-    public FaceTrackingAnalyzer(TextureView textureView, ImageView imageView, Button button, CameraX.LensFacing lens, Activity context, FaceNet faceNet, List<FaceRecognition> faceRecognitionList, FirebaseFirestore db) {
+    public FaceTrackingAnalyzer(TextureView textureView, ImageView imageView, Button button, CameraX.LensFacing lens, Activity context, FaceNet faceNet, List<FaceRecognition> faceRecognitionList, FirebaseFirestore db, String emailAddr) {
         this.textureView = textureView;
         this.imageView = imageView;
         this.lens = lens;
@@ -68,6 +69,7 @@ public class FaceTrackingAnalyzer extends CameraActivity implements ImageAnalysi
         this.faceNet = faceNet;
         this.faceRecognitionList = faceRecognitionList;
         this.db = db;
+        this.emailAddr = emailAddr;
     }
 
     @Override
@@ -127,7 +129,7 @@ public class FaceTrackingAnalyzer extends CameraActivity implements ImageAnalysi
                                         Toast.makeText(getApplicationContext(), "Please enter name", Toast.LENGTH_SHORT).show();
                                     } else {
                                         //Todo: Facial Recognition method to get embeddings and save it to a List
-                                        faceRecognitionList = faceNet.addFaceToRecognitionList(name,croppedFaceBitmap,faceRecognitionList,db);
+                                        faceRecognitionList = faceNet.addFaceToRecognitionList(name,croppedFaceBitmap,faceRecognitionList,db, emailAddr);
                                         dialogInterface.dismiss();
                                     }
                                 }
