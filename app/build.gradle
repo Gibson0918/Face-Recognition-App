@@ -2,6 +2,14 @@ apply plugin: 'com.android.application'
 apply plugin: 'com.google.gms.google-services'
 
 android {
+    signingConfigs {
+        Production {
+            storeFile file('C:\\Users\\Gerald\\Desktop\\Keystore.jks')
+            storePassword 'Democracy'
+            keyAlias 'CameraX_App'
+            keyPassword 'Democracy'
+        }
+    }
     compileSdkVersion 30
     buildToolsVersion "30.0.2"
 
@@ -28,8 +36,10 @@ android {
 
     buildTypes {
         release {
-            minifyEnabled false
+            minifyEnabled true
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            signingConfig signingConfigs.Production
+            debuggable true
         }
     }
 }
@@ -72,4 +82,11 @@ dependencies {
 
     implementation 'org.tensorflow:tensorflow-lite:2.3.0'
     implementation 'org.tensorflow:tensorflow-lite-gpu:2.3.0'
+
+    //firebase Auth
+    implementation 'com.google.firebase:firebase-auth:19.4.0'
+    implementation 'com.google.android.gms:play-services-auth:18.1.0'
+
+    //lottie animation for splash screen
+    implementation 'com.airbnb.android:lottie:3.4.4'
 }
