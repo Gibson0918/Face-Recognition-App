@@ -25,6 +25,8 @@ import android.util.Size;
 import android.view.TextureView;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.animation.Animation;
+import android.view.animation.AnimationUtils;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.Toast;
@@ -35,6 +37,7 @@ import com.google.android.gms.auth.api.signin.GoogleSignInClient;
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
+import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
 import com.google.firebase.firestore.QuerySnapshot;
@@ -59,7 +62,12 @@ public class CameraActivity extends AppCompatActivity {
     private FirebaseFirestore db;
     private GoogleSignInClient mGoogleSignInClient;
     private String emailAddr;
-
+    private Animation rotateOpen;
+    private Animation rotateClose;
+    private Animation fromBottom;
+    private Animation toBottom;
+    private FloatingActionButton menuFab, sign_out_fab, editFab, addFab, brightnessFab;
+    private boolean clicked = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -67,11 +75,39 @@ public class CameraActivity extends AppCompatActivity {
         setContentView(R.layout.activity_camera);
         textureView = findViewById(R.id.textureView);
         imageView  = findViewById(R.id.imageView);
-        addButton = findViewById(R.id.button);
-        signOutButton = findViewById(R.id.button2);
         faceRecognitionList = new ArrayList<>();
         GoogleSignInAccount account = GoogleSignIn.getLastSignedInAccount(this);
         emailAddr = account.getEmail();
+        menuFab = findViewById(R.id.menu_fab);
+        sign_out_fab = findViewById(R.id.sign_out_fab);
+        brightnessFab = findViewById(R.id.brightness_fab);
+        editFab =  findViewById(R.id.edit_fab);
+        addFab = findViewById(R.id.add_fab);
+        rotateOpen = AnimationUtils.loadAnimation(CameraActivity.this,R.anim.rotate_open_anim);
+        rotateClose = AnimationUtils.loadAnimation(CameraActivity.this,R.anim.rotate_close_anim);
+        fromBottom = AnimationUtils.loadAnimation(CameraActivity.this,R.anim.from_bottom_anim);
+        toBottom = AnimationUtils.loadAnimation(CameraActivity.this,R.anim.to_bottom_anim);
+        GoogleSignInOptions gso = new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
+                .requestEmail()
+                .build();
+
+        mGoogleSignInClient = GoogleSignIn.getClient(this, gso);
+
+        menuFab.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                setVisibilityFab(clicked);
+                setAnimation(clicked);
+                setClickableFab(clicked);
+                if(!clicked) {
+                    clicked = true;
+                }
+                else {
+                    clicked = false;
+                }
+            }
+        });
+
         //Populate the faceRecognitionList on startup from firestore'
         //running fireStore request on a new thread
         new Thread(new Runnable() {
@@ -116,19 +152,60 @@ public class CameraActivity extends AppCompatActivity {
             ActivityCompat.requestPermissions(this, REQUIRED_PERMISSIONS, REQUEST_CODE_PERMISSIONS);
         }
 
-        GoogleSignInOptions gso = new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
-                .requestEmail()
-                .build();
-
-        mGoogleSignInClient = GoogleSignIn.getClient(this, gso);
-
-        signOutButton.setOnClickListener(new View.OnClickListener() {
+        sign_out_fab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 signOut();
-
             }
         });
+    }
+
+    private void  setVisibilityFab (boolean clicked)  {
+        if(!clicked){
+            sign_out_fab.setVisibility(View.VISIBLE);
+            brightnessFab.setVisibility(View.VISIBLE);
+            editFab.setVisibility(View.VISIBLE);
+            addFab.setVisibility(View.VISIBLE);
+        }
+        else {
+            sign_out_fab.setVisibility(View.INVISIBLE);
+            brightnessFab.setVisibility(View.INVISIBLE);
+            editFab.setVisibility(View.INVISIBLE);
+            addFab.setVisibility(View.INVISIBLE);
+        }
+    }
+
+    private void setAnimation(boolean clicked) {
+        if(!clicked) {
+            addFab.startAnimation(fromBottom);
+            editFab.startAnimation(fromBottom);
+            brightnessFab.startAnimation(fromBottom);
+            sign_out_fab.startAnimation(fromBottom);
+            menuFab.startAnimation(rotateOpen);
+        }
+        else {
+            addFab.startAnimation(toBottom);
+            editFab.startAnimation(toBottom);
+            brightnessFab.startAnimation(toBottom);
+            sign_out_fab.startAnimation(toBottom);
+            menuFab.startAnimation(rotateClose);
+        }
+
+    }
+
+    private void setClickableFab(boolean clicked) {
+        if(!clicked){
+            addFab.setClickable(true);
+            editFab.setClickable(true);
+            brightnessFab.setClickable(true);
+            sign_out_fab.setClickable(true);
+        }
+        else {
+            addFab.setClickable(false);
+            editFab.setClickable(false);
+            brightnessFab.setClickable(false);
+            sign_out_fab.setClickable(false);
+        }
     }
 
 
@@ -170,7 +247,7 @@ public class CameraActivity extends AppCompatActivity {
 
         ImageAnalysis imageAnalysis = new ImageAnalysis(imageAnalysisConfig);
         imageAnalysis.setAnalyzer(Runnable::run,
-                new FaceTrackingAnalyzer(textureView, imageView, addButton,CameraX.LensFacing.FRONT,this, faceNet, faceRecognitionList,db,emailAddr));
+                new FaceTrackingAnalyzer(textureView, imageView, addFab,CameraX.LensFacing.FRONT,this, faceNet, faceRecognitionList,db,emailAddr));
         CameraX.bindToLifecycle(this, preview, imageAnalysis);
     }
 

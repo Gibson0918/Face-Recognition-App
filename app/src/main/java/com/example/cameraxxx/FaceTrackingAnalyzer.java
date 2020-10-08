@@ -26,6 +26,7 @@ import androidx.camera.core.CameraX;
 import androidx.camera.core.ImageAnalysis;
 import androidx.camera.core.ImageProxy;
 
+import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.ml.vision.FirebaseVision;
 import com.google.firebase.ml.vision.common.FirebaseVisionImage;
@@ -50,7 +51,7 @@ public class FaceTrackingAnalyzer extends CameraActivity implements ImageAnalysi
     private float heightScaleFactor = 1.0f;
     private CameraX.LensFacing lens;
     private FirebaseVisionImage fbImage;
-    private Button button;
+    private FloatingActionButton addFab;
     private Activity context;
     private FaceNet faceNet;
     private List<FaceRecognition> faceRecognitionList;
@@ -60,11 +61,11 @@ public class FaceTrackingAnalyzer extends CameraActivity implements ImageAnalysi
     private String emailAddr;
 
 
-    public FaceTrackingAnalyzer(TextureView textureView, ImageView imageView, Button button, CameraX.LensFacing lens, Activity context, FaceNet faceNet, List<FaceRecognition> faceRecognitionList, FirebaseFirestore db, String emailAddr) {
+    public FaceTrackingAnalyzer(TextureView textureView, ImageView imageView, FloatingActionButton addFab, CameraX.LensFacing lens, Activity context, FaceNet faceNet, List<FaceRecognition> faceRecognitionList, FirebaseFirestore db, String emailAddr) {
         this.textureView = textureView;
         this.imageView = imageView;
         this.lens = lens;
-        this.button = button;
+        this.addFab = addFab;
         this.context = context;
         this.faceNet = faceNet;
         this.faceRecognitionList = faceRecognitionList;
@@ -104,50 +105,54 @@ public class FaceTrackingAnalyzer extends CameraActivity implements ImageAnalysi
                     e.printStackTrace();
                 }
                 //only allow faces to be added when there is only 1  face in the frame
-                if(firebaseVisionFaces.size() == 1) {
-                    button.setTextColor(Color.GREEN);
-                    button.setClickable(true);
-                    button.setOnClickListener(new View.OnClickListener() {
+
+
+                    addFab.setOnClickListener(new View.OnClickListener() {
                         @Override
                         public void onClick(View view) {
-                            FirebaseVisionFace face = firebaseVisionFaces.get(0);
-                            Bitmap croppedFaceBitmap = getFaceBitmap(face);
-                            AlertDialog.Builder builder = new AlertDialog.Builder(context);
-                            LayoutInflater inflater = context.getLayoutInflater();
-                            View dialogLayout = inflater.inflate(R.layout.add_face_dialog, null);
-                            ImageView ivFace = dialogLayout.findViewById(R.id.dlg_image);
-                            TextView tvTitle = dialogLayout.findViewById(R.id.dlg_title);
-                            EditText etName = dialogLayout.findViewById(R.id.dlg_input);
-                            tvTitle.setText("Add Face");
-                            ivFace.setImageBitmap(croppedFaceBitmap);
-                            etName.setHint("Input Name");
-                            builder.setPositiveButton("OK", new DialogInterface.OnClickListener() {
-                                @Override
-                                public void onClick(DialogInterface dialogInterface, int i) {
-                                    String name = etName.getText().toString();
-                                    if (name.isEmpty()) {
-                                        Toast.makeText(getApplicationContext(), "Please enter name", Toast.LENGTH_SHORT).show();
-                                    } else {
-                                        //Todo: Facial Recognition method to get embeddings and save it to a List
-                                        faceRecognitionList = faceNet.addFaceToRecognitionList(name,croppedFaceBitmap,faceRecognitionList,db, emailAddr);
-                                        dialogInterface.dismiss();
-                                    }
+                            if(firebaseVisionFaces.size() == 1) {
+                                FirebaseVisionFace face = firebaseVisionFaces.get(0);
+                                Bitmap croppedFaceBitmap = getFaceBitmap(face);
+                                if(croppedFaceBitmap != null) {
+                                    AlertDialog.Builder builder = new AlertDialog.Builder(context);
+                                    LayoutInflater inflater = context.getLayoutInflater();
+                                    View dialogLayout = inflater.inflate(R.layout.add_face_dialog, null);
+                                    ImageView ivFace = dialogLayout.findViewById(R.id.dlg_image);
+                                    TextView tvTitle = dialogLayout.findViewById(R.id.dlg_title);
+                                    EditText etName = dialogLayout.findViewById(R.id.dlg_input);
+                                    tvTitle.setText("Add Face");
+                                    ivFace.setImageBitmap(croppedFaceBitmap);
+                                    etName.setHint("Input Name");
+                                    builder.setPositiveButton("OK", new DialogInterface.OnClickListener() {
+                                        @Override
+                                        public void onClick(DialogInterface dialogInterface, int i) {
+                                            String name = etName.getText().toString();
+                                            if (name.isEmpty()) {
+                                                Toast.makeText(context, "Please enter name", Toast.LENGTH_SHORT).show();
+                                            } else {
+                                                //Todo: Facial Recognition method to get embeddings and save it to a List
+                                                faceRecognitionList = faceNet.addFaceToRecognitionList(name, croppedFaceBitmap, faceRecognitionList, db, emailAddr);
+                                                dialogInterface.dismiss();
+                                            }
+                                        }
+                                    });
+                                    builder.setView(dialogLayout);
+                                    builder.show();
                                 }
-                            });
-                            builder.setView(dialogLayout);
-                            builder.show();
+                                else {
+                                    Toast.makeText(context,"Please try again, error capturing face image!", Toast.LENGTH_LONG).show();
+                                }
+                            }
+                            else {
+                                Toast.makeText(context,"Please ensure that only 1 face is shown!", Toast.LENGTH_LONG).show();
+                            }
                         }
                     });
-                }
-                else {
-                    button.setTextColor(Color.RED);
-                    button.setClickable(false);
-                }
+
+
             } else {
                 //clear the canvas/drawings of rect boxes when there are no faces detected
                 canvas.drawColor(Color.TRANSPARENT, PorterDuff.Mode.MULTIPLY);
-                button.setTextColor(Color.RED);
-                button.setClickable(false);
                 imageView.setImageBitmap(abitmap);
             }
         }).addOnFailureListener(e -> Log.i("sad", e.toString())

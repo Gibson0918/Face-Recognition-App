@@ -120,11 +120,8 @@ public class FaceNet {
     private float [][] run (Bitmap bitmap)  {
         bitmap  = resizedBitmap(bitmap, IMAGE_HEIGHT, IMAGE_WIDTH);
         convertBitmapToByteBuffer(bitmap);
-
         float [][] faceEmbeddings = new float[1][192];
         tflife.run(imgData, faceEmbeddings);
-
-
         return faceEmbeddings;
     }
 
@@ -133,9 +130,7 @@ public class FaceNet {
     public Future<FaceRecognition> recognizeFace(Bitmap bitmap, List<FaceRecognition> faceRecognitionList) {
         CompletableFuture<FaceRecognition> completableFuture = new CompletableFuture<>();
         FaceRecognition recognizedFace = new FaceRecognition("unknown",null);
-
         double smallestDist = Double.MAX_VALUE;
-        
         float[][] unknownfaceEmbeddings = run(bitmap);
         for (FaceRecognition face : faceRecognitionList) {
             double distance = 0;

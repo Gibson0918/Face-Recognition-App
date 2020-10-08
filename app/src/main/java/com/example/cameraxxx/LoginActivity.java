@@ -10,6 +10,8 @@ import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.airbnb.lottie.LottieAnimationView;
+import com.airbnb.lottie.LottieDrawable;
 import com.google.android.gms.auth.api.signin.GoogleSignIn;
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
 import com.google.android.gms.auth.api.signin.GoogleSignInClient;
@@ -21,7 +23,7 @@ import com.google.android.gms.tasks.Task;
 public class LoginActivity extends AppCompatActivity {
 
     private SignInButton googleSignInButton;
-    private TextView registerTextView;
+    private LottieAnimationView lottieAnimationView;
     private GoogleSignInClient mGoogleSignInClient;
     int RC_SIGN_IN = 10;
 
@@ -30,7 +32,8 @@ public class LoginActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_login);
         googleSignInButton = findViewById(R.id.sign_in_button);
-        registerTextView = findViewById(R.id.registerTextView);
+        lottieAnimationView = findViewById(R.id.lottie_animation);
+        lottieAnimationView.setRepeatCount(LottieDrawable.INFINITE);
 
         // Configure sign-in to request the user's ID, email address, and basic
         // profile. ID and basic profile are included in DEFAULT_SIGN_IN.
@@ -49,8 +52,15 @@ public class LoginActivity extends AppCompatActivity {
             }
         });
 
+    }
 
-
+    @Override
+    protected void onStart() {
+        super.onStart();
+        // Check for existing Google Sign In account, if the user is already signed in
+        // the GoogleSignInAccount will be non-null.
+        GoogleSignInAccount account = GoogleSignIn.getLastSignedInAccount(this);
+        updateUI(account);
     }
 
     @Override
@@ -80,10 +90,7 @@ public class LoginActivity extends AppCompatActivity {
     }
 
     private void updateUI(GoogleSignInAccount account) {
-        if(account == null){
-            Toast.makeText(LoginActivity.this,  "Error signing in, Please try again!", Toast.LENGTH_SHORT).show();
-        }
-        else {
+        if(account !=  null){
             Intent intent = new Intent(LoginActivity.this, CameraActivity.class);
             startActivity(intent);
             finish();
