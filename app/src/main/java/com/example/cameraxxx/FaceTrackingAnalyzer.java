@@ -104,12 +104,10 @@ public class FaceTrackingAnalyzer extends CameraActivity implements ImageAnalysi
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
-                //only allow faces to be added when there is only 1  face in the frame
-
-
                     addFab.setOnClickListener(new View.OnClickListener() {
                         @Override
                         public void onClick(View view) {
+                            //only allow faces to be added when there is only 1  face in the frame
                             if(firebaseVisionFaces.size() == 1) {
                                 FirebaseVisionFace face = firebaseVisionFaces.get(0);
                                 Bitmap croppedFaceBitmap = getFaceBitmap(face);
@@ -130,7 +128,7 @@ public class FaceTrackingAnalyzer extends CameraActivity implements ImageAnalysi
                                             if (name.isEmpty()) {
                                                 Toast.makeText(context, "Please enter name", Toast.LENGTH_SHORT).show();
                                             } else {
-                                                //Todo: Facial Recognition method to get embeddings and save it to a List
+                                                //Todo: Implement Cloud storage for images to  be stored for each faces
                                                 faceRecognitionList = faceNet.addFaceToRecognitionList(name, croppedFaceBitmap, faceRecognitionList, db, emailAddr);
                                                 dialogInterface.dismiss();
                                             }
@@ -148,9 +146,8 @@ public class FaceTrackingAnalyzer extends CameraActivity implements ImageAnalysi
                             }
                         }
                     });
-
-
-            } else {
+            }
+            else {
                 //clear the canvas/drawings of rect boxes when there are no faces detected
                 canvas.drawColor(Color.TRANSPARENT, PorterDuff.Mode.MULTIPLY);
                 imageView.setImageBitmap(abitmap);
@@ -200,10 +197,8 @@ public class FaceTrackingAnalyzer extends CameraActivity implements ImageAnalysi
                 if (croppedFaceBitmap == null) {
                     return;
                 } else {
-                        //Todo  have to  optimize the face recognition here too expensive
                         Future<FaceRecognition> faceRecognitionFutureTask = faceNet.recognizeFace(croppedFaceBitmap, faceRecognitionList);
                         FaceRecognition recognizeFace = faceRecognitionFutureTask.get();
-
                         textPaint.getTextBounds(recognizeFace.getName(),0,recognizeFace.getName().length(),bounds);
                         canvas.drawRect((int) translateX(face.getBoundingBox().left),
                                 (int) translateY(face.getBoundingBox().top - bounds.height()+10),
