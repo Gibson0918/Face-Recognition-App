@@ -21,11 +21,13 @@ import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.annotation.NonNull;
 import androidx.annotation.RequiresApi;
 import androidx.camera.core.CameraX;
 import androidx.camera.core.ImageAnalysis;
 import androidx.camera.core.ImageProxy;
 
+import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.ml.vision.FirebaseVision;
@@ -152,8 +154,12 @@ public class FaceTrackingAnalyzer extends CameraActivity implements ImageAnalysi
                 canvas.drawColor(Color.TRANSPARENT, PorterDuff.Mode.MULTIPLY);
                 imageView.setImageBitmap(abitmap);
             }
-        }).addOnFailureListener(e -> Log.i("sad", e.toString())
-        ).addOnCompleteListener(task -> imageProxy.close());
+        }).addOnFailureListener(new OnFailureListener() {
+            @Override
+            public void onFailure(@NonNull Exception e) {
+
+            }
+        }).addOnCompleteListener(task -> imageProxy.close());
     }
 
     //setting up the paint and canvas for the drawing of rect boxes
@@ -210,7 +216,7 @@ public class FaceTrackingAnalyzer extends CameraActivity implements ImageAnalysi
                                 translateY(face.getBoundingBox().top-5),
                                 textPaint);
 
-                        Log.d("face",recognizeFace.getName());
+                        //Log.d("face",recognizeFace.getName());
                         //draw a rect box around each face
                         box = new Rect((int) translateX(face.getBoundingBox().left),
                                 (int) translateY(face.getBoundingBox().top),
@@ -257,7 +263,7 @@ public class FaceTrackingAnalyzer extends CameraActivity implements ImageAnalysi
             faceBitmap = Bitmap.createBitmap(originalFrame, face.getBoundingBox().left, face.getBoundingBox().top, face.getBoundingBox().right - face.getBoundingBox().left, face.getBoundingBox().bottom - face.getBoundingBox().top);
         }
         catch (IllegalArgumentException  e){
-            Log.d("Err123",e.getMessage());
+           // Log.d("Err123",e.getMessage());
         }
         return faceBitmap;
     }

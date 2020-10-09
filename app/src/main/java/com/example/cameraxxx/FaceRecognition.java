@@ -3,6 +3,7 @@ package com.example.cameraxxx;
 import androidx.annotation.Nullable;
 
 public class FaceRecognition {
+    
 
     private final String name;
     private final float [][] embedding;

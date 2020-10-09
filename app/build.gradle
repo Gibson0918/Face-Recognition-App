@@ -39,7 +39,7 @@ android {
             minifyEnabled true
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
             signingConfig signingConfigs.Production
-            debuggable true
+            debuggable false
         }
     }
 }

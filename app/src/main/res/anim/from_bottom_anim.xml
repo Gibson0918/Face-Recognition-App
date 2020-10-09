@@ -3,7 +3,7 @@
     android:fillAfter="true">
 
     <translate
-        android:duration  = "300"
+        android:duration = "300"
         android:fromYDelta="100%"
         android:toYDelta="0%"/>
 

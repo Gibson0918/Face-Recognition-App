@@ -19,6 +19,7 @@ import androidx.core.content.ContextCompat;
 import android.annotation.SuppressLint;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.graphics.Camera;
 import android.os.Bundle;
 import android.os.Environment;
 import android.util.Size;
@@ -29,6 +30,7 @@ import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
 import android.widget.Button;
 import android.widget.ImageView;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.google.android.gms.auth.api.signin.GoogleSignIn;
@@ -56,17 +58,14 @@ public class CameraActivity extends AppCompatActivity {
     private final String[] REQUIRED_PERMISSIONS = new String[]{"android.permission.CAMERA", "android.permission.WRITE_EXTERNAL_STORAGE"};
     private TextureView textureView;
     private ImageView imageView;
-    private Button addButton, signOutButton;
     private FaceNet faceNet;
     private List<FaceRecognition> faceRecognitionList;
     private FirebaseFirestore db;
     private GoogleSignInClient mGoogleSignInClient;
     private String emailAddr;
-    private Animation rotateOpen;
-    private Animation rotateClose;
-    private Animation fromBottom;
-    private Animation toBottom;
+    private Animation rotateOpen, rotateClose, fromBottom, toBottom, showHelperText, hideHelperText;
     private FloatingActionButton menuFab, sign_out_fab, editFab, addFab, brightnessFab;
+    private TextView sign_out_tv, edit_tv, add_tv, brightness_tv;
     private boolean clicked = false;
 
     @Override
@@ -83,10 +82,16 @@ public class CameraActivity extends AppCompatActivity {
         brightnessFab = findViewById(R.id.brightness_fab);
         editFab =  findViewById(R.id.edit_fab);
         addFab = findViewById(R.id.add_fab);
+        sign_out_tv = findViewById(R.id.sign_out_tv);
+        edit_tv = findViewById(R.id.editTextView);
+        add_tv = findViewById(R.id.addTextView);
+        brightness_tv = findViewById(R.id.brightnessTextView);
         rotateOpen = AnimationUtils.loadAnimation(CameraActivity.this,R.anim.rotate_open_anim);
         rotateClose = AnimationUtils.loadAnimation(CameraActivity.this,R.anim.rotate_close_anim);
         fromBottom = AnimationUtils.loadAnimation(CameraActivity.this,R.anim.from_bottom_anim);
         toBottom = AnimationUtils.loadAnimation(CameraActivity.this,R.anim.to_bottom_anim);
+        showHelperText = AnimationUtils.loadAnimation(CameraActivity.this, R.anim.show_hint);
+        hideHelperText = AnimationUtils.loadAnimation(CameraActivity.this, R.anim.hide_hint);
         GoogleSignInOptions gso = new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
                 .requestEmail()
                 .build();
@@ -99,6 +104,8 @@ public class CameraActivity extends AppCompatActivity {
                 setVisibilityFab(clicked);
                 setAnimation(clicked);
                 setClickableFab(clicked);
+                showHelperText(clicked);
+                showHelperTextAnimation(clicked);
                 if(!clicked) {
                     clicked = true;
                 }
@@ -160,6 +167,40 @@ public class CameraActivity extends AppCompatActivity {
         });
     }
 
+    private void showHelperTextAnimation(boolean clicked) {
+        if(!clicked) {
+            sign_out_tv.startAnimation(showHelperText);
+            brightness_tv.startAnimation(showHelperText);
+            edit_tv.startAnimation(showHelperText);
+            add_tv.startAnimation(showHelperText);
+        }
+        else {
+            sign_out_tv.startAnimation(hideHelperText);
+            brightness_tv.startAnimation(hideHelperText);
+            edit_tv.startAnimation(hideHelperText);
+            add_tv.startAnimation(hideHelperText);
+        }
+    }
+
+    private void showHelperText(boolean clicked) {
+        if(!clicked) {
+            sign_out_tv.setVisibility(View.VISIBLE);
+            brightness_tv.setVisibility(View.VISIBLE);
+            edit_tv.setVisibility(View.VISIBLE);
+            add_tv.setVisibility(View.VISIBLE);
+            sign_out_tv.setAlpha(0.7f);
+            brightness_tv.setAlpha(0.7f);
+            edit_tv.setAlpha(0.7f);
+            add_tv.setAlpha(0.7f);
+        }
+        else {
+            sign_out_tv.setVisibility(View.INVISIBLE);
+            brightness_tv.setVisibility(View.INVISIBLE);
+            edit_tv.setVisibility(View.INVISIBLE);
+            add_tv.setVisibility(View.INVISIBLE);
+        }
+    }
+
     private void  setVisibilityFab (boolean clicked)  {
         if(!clicked){
             sign_out_fab.setVisibility(View.VISIBLE);
@@ -190,7 +231,6 @@ public class CameraActivity extends AppCompatActivity {
             sign_out_fab.startAnimation(toBottom);
             menuFab.startAnimation(rotateClose);
         }
-
     }
 
     private void setClickableFab(boolean clicked) {
@@ -306,5 +346,4 @@ public class CameraActivity extends AppCompatActivity {
                     }
                 });
     }
-
 }

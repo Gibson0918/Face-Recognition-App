@@ -33,6 +33,7 @@
         android:layout_marginEnd="16dp"
         android:layout_marginBottom="16dp"
         android:clickable="true"
+        app:backgroundTint="#673AB7"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:srcCompat="@drawable/white_settings_logo" />
@@ -45,6 +46,7 @@
         android:clickable="true"
         android:focusable="true"
         android:visibility="invisible"
+        app:backgroundTint="#FFC0CB"
         app:layout_constraintBottom_toTopOf="@+id/menu_fab"
         app:layout_constraintEnd_toEndOf="@+id/menu_fab"
         app:layout_constraintHorizontal_bias="0.0"
@@ -58,6 +60,7 @@
         android:clickable="true"
         android:focusable="true"
         android:visibility="invisible"
+        app:backgroundTint="#FFC0CB"
         app:layout_constraintBottom_toTopOf="@+id/brightness_fab"
         app:layout_constraintEnd_toEndOf="@+id/brightness_fab"
         app:layout_constraintHorizontal_bias="1.0"
@@ -71,6 +74,7 @@
         android:clickable="true"
         android:focusable="true"
         android:visibility="invisible"
+        app:backgroundTint="#FFC0CB"
         app:layout_constraintBottom_toTopOf="@+id/edit_fab"
         app:layout_constraintEnd_toEndOf="@+id/edit_fab"
         app:layout_constraintHorizontal_bias="0.0"
@@ -84,9 +88,65 @@
         android:clickable="true"
         android:focusable="true"
         android:visibility="invisible"
+        app:backgroundTint="#FFC0CB"
         app:layout_constraintBottom_toTopOf="@+id/sign_out_fab"
         app:layout_constraintEnd_toEndOf="@+id/sign_out_fab"
         app:layout_constraintHorizontal_bias="0.0"
         app:layout_constraintStart_toStartOf="@+id/sign_out_fab"
         app:srcCompat="@drawable/white_brightness_setting_logo" />
+
+    <TextView
+        android:id="@+id/addTextView"
+        android:layout_width="30sp"
+        android:layout_height="wrap_content"
+        android:background="@color/light_grey"
+        android:fontFamily="@font/regular"
+        android:text="Add"
+        android:textAlignment="center"
+        android:visibility="invisible"
+        app:layout_constraintBottom_toTopOf="@+id/edit_fab"
+        app:layout_constraintEnd_toStartOf="@+id/add_fab"
+        app:layout_constraintTop_toTopOf="@+id/add_fab"
+        app:layout_constraintVertical_bias="0.567" />
+
+    <TextView
+        android:id="@+id/editTextView"
+        android:layout_width="30sp"
+        android:layout_height="wrap_content"
+        android:background="@color/light_grey"
+        android:fontFamily="@font/regular"
+        android:text="Edit"
+        android:textAlignment="center"
+        android:visibility="invisible"
+        app:layout_constraintBottom_toBottomOf="@+id/edit_fab"
+        app:layout_constraintEnd_toStartOf="@+id/edit_fab"
+        app:layout_constraintTop_toTopOf="@+id/edit_fab"
+        app:layout_constraintVertical_bias="0.513" />
+
+    <TextView
+        android:id="@+id/brightnessTextView"
+        android:layout_width="70sp"
+        android:layout_height="wrap_content"
+        android:background="@color/light_grey"
+        android:fontFamily="@font/regular"
+        android:text="Brightness"
+        android:textAlignment="center"
+        android:visibility="invisible"
+        app:layout_constraintBottom_toTopOf="@+id/sign_out_fab"
+        app:layout_constraintEnd_toStartOf="@+id/brightness_fab"
+        app:layout_constraintTop_toBottomOf="@+id/edit_fab" />
+
+    <TextView
+        android:id="@+id/sign_out_tv"
+        android:layout_width="60sp"
+        android:layout_height="wrap_content"
+        android:background="@color/light_grey"
+        android:fontFamily="@font/regular"
+        android:text="Sign Out"
+        android:textAlignment="center"
+        android:visibility="invisible"
+        app:layout_constraintBottom_toBottomOf="@+id/sign_out_fab"
+        app:layout_constraintEnd_toStartOf="@+id/sign_out_fab"
+        app:layout_constraintTop_toTopOf="@+id/sign_out_fab"
+        app:layout_constraintVertical_bias="0.459" />
 </androidx.constraintlayout.widget.ConstraintLayout>

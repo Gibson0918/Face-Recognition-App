@@ -150,8 +150,8 @@ public class FaceNet {
         if(smallestDist >=1.0f){
             recognizedFace = new FaceRecognition("unknown",null);
         }
-        Log.d("face",recognizedFace.getName());
-        Log.d("face",  "dist: "+ smallestDist);
+        //Log.d("face",recognizedFace.getName());
+        //Log.d("face",  "dist: "+ smallestDist);
         completableFuture.complete(recognizedFace);
         return completableFuture;
     }
@@ -173,12 +173,12 @@ public class FaceNet {
         db.collection(emailAddr).add(faces).addOnSuccessListener(new OnSuccessListener<DocumentReference>() {
             @Override
             public void onSuccess(DocumentReference documentReference) {
-                Log.d("Success!",documentReference.getId());
+                //Log.d("Success!",documentReference.getId());
             }
         }).addOnFailureListener(new OnFailureListener() {
             @Override
             public void onFailure(@NonNull Exception e) {
-                Log.d("Failed",e.toString());
+                //Log.d("Failed",e.toString());
             }
         });
         return faceRecognitionList;
