@@ -249,7 +249,6 @@ public class CameraActivity extends AppCompatActivity {
 
     @SuppressLint("RestrictedApi")
     private void startCamera() {
-
         try {
             CameraX.getCameraWithLensFacing(CameraX.LensFacing.FRONT);
             initCamera();
@@ -291,7 +290,6 @@ public class CameraActivity extends AppCompatActivity {
 
     //not required unless you want to save the bitmap to external storage
     public String getBatchDirectoryName() {
-
         String app_folder_path = "";
         app_folder_path = Environment.getExternalStorageDirectory().toString() + "/images";
         File dir = new File(app_folder_path);
@@ -302,7 +300,6 @@ public class CameraActivity extends AppCompatActivity {
     }
 
     private boolean allPermissionsGranted(){
-
         for(String permission : REQUIRED_PERMISSIONS){
             if(ContextCompat.checkSelfPermission(this, permission) != PackageManager.PERMISSION_GRANTED){
                 return false;
@@ -332,7 +329,6 @@ public class CameraActivity extends AppCompatActivity {
     }
 
     private void signOut() {
-
         mGoogleSignInClient.signOut()
                 .addOnCompleteListener(this, new OnCompleteListener<Void>() {
                     @Override
