@@ -8,12 +8,20 @@
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:712637543347:android:82e1c830d72dfac725d1c6",
+        "mobilesdk_app_id": "1:712637543347:android:07e06563f64a93db25d1c6",
         "android_client_info": {
-          "package_name": "com.example.cameraxxx"
+          "package_name": "com.gibson.face_recognition_camera"
         }
       },
       "oauth_client": [
+        {
+          "client_id": "712637543347-mibkom5c7tn4sdamrp0n4kguqoh6t21a.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.gibson.face_recognition_camera",
+            "certificate_hash": "1295ff5de1dd030fb75c039f9a907c5e749290ac"
+          }
+        },
         {
           "client_id": "712637543347-3va00f40co078eg2nnn6qsl1bvp9pcnr.apps.googleusercontent.com",
           "client_type": 3
@@ -28,7 +36,7 @@
         "appinvite_service": {
           "other_platform_oauth_client": [
             {
-              "client_id": "712637543347-3va00f40co078eg2nnn6qsl1bvp9pcnr.apps.googleusercontent.com",
+              "client_id": "712637543347-v8cf64pibeu22q36stvuof3ckm9ao8nn.apps.googleusercontent.com",
               "client_type": 3
             }
           ]

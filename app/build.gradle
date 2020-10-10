@@ -4,7 +4,7 @@ apply plugin: 'com.google.gms.google-services'
 android {
     signingConfigs {
         Production {
-            storeFile file('C:\\Users\\Gerald\\Desktop\\Keystore.jks')
+            storeFile file('C:\\Users\\Gerald\\Downloads\\Gibson\\CameraX_App\\Keystore.jks')
             storePassword 'Democracy'
             keyAlias 'CameraX_App'
             keyPassword 'Democracy'
@@ -14,7 +14,7 @@ android {
     buildToolsVersion "30.0.2"
 
     defaultConfig {
-        applicationId "com.example.cameraxxx"
+        applicationId "com.gibson.face_recognition_camera"
         minSdkVersion 24
         targetSdkVersion 27
         versionCode 1

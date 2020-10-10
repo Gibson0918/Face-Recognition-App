@@ -1,4 +1,4 @@
-package com.example.cameraxxx;
+package com.gibson.face_recognition_camera;
 
 import android.content.Context;
 

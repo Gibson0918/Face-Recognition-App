@@ -1,4 +1,4 @@
-package com.example.cameraxxx;
+package com.gibson.face_recognition_camera;
 
 import android.app.Activity;
 import android.app.AlertDialog;
@@ -11,11 +11,9 @@ import android.graphics.PorterDuff;
 import android.graphics.PorterDuffXfermode;
 import android.graphics.Rect;
 import android.os.Build;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.TextureView;
 import android.view.View;
-import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.TextView;
