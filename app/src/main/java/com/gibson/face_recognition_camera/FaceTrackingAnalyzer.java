@@ -169,7 +169,6 @@ public class FaceTrackingAnalyzer extends CameraActivity implements ImageAnalysi
             paint.setColor(Color.BLUE);
             paint.setStyle(Paint.Style.STROKE);
             paint.setStrokeWidth(2f);
-            paint.setTextSize(40);
             drawPaint = new Paint();
             drawPaint.setColor(Color.WHITE);
             drawPaint.setStyle(Paint.Style.FILL_AND_STROKE);
