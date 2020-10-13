@@ -38,7 +38,7 @@ public class FaceNet {
     private static final int IMAGE_WIDTH = 112;
     private static final int NUM_CHANNELS = 3;
     private static final int NUM_BYTES_PER_CHANNEL = 4;
-    private static final int EMBEEDINNG_SIZE = 192;
+    private static final int EMBEDDING_SIZE = 192;
 
     private final int [] intValues = new int [IMAGE_HEIGHT * IMAGE_WIDTH];
     private ByteBuffer imgData;
@@ -129,7 +129,7 @@ public class FaceNet {
         for (FaceRecognition face : faceRecognitionList) {
             double distance = 0;
             float[][] recognizedFaceEmbeddings = face.getEmbedding();
-            for (int i = 0; i < EMBEEDINNG_SIZE; i++) {
+            for (int i = 0; i < EMBEDDING_SIZE; i++) {
                 float diff = (unknownfaceEmbeddings[0][i] - recognizedFaceEmbeddings[0][i]);
                 float result = diff *diff;
                 distance += result;
