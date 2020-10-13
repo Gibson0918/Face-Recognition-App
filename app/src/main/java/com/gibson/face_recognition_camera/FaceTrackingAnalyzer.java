@@ -193,7 +193,7 @@ public class FaceTrackingAnalyzer extends CameraActivity implements ImageAnalysi
     @RequiresApi(api = Build.VERSION_CODES.N)
     private synchronized void processFaces(List<FirebaseVisionFace> faces) throws ExecutionException, InterruptedException {
         //I  have set facial recognition to be performed only when there are less than 3 faces in the frame
-        if(faces.size() <= 4 ) {
+        /*if(faces.size() <= 4 ) {
             for (FirebaseVisionFace face : faces) {
                 // get a cropped bitmap of each face
                 Bitmap croppedFaceBitmap = getFaceBitmap(face);
@@ -225,6 +225,41 @@ public class FaceTrackingAnalyzer extends CameraActivity implements ImageAnalysi
             }
         else {
             canvas.drawColor(Color.TRANSPARENT, PorterDuff.Mode.MULTIPLY);
+        }*/
+
+        int count =0;
+        canvas.drawColor(Color.TRANSPARENT, PorterDuff.Mode.MULTIPLY);
+        for (int i =0; i<faces.size(); i++) {
+            Bitmap croppedFaceBitmap = getFaceBitmap(faces.get(i));
+            if (croppedFaceBitmap == null) {
+                return;
+            }
+            else {
+                if(count <=3){
+                    Future<FaceRecognition> faceRecognitionFutureTask = faceNet.recognizeFace(croppedFaceBitmap, faceRecognitionList);
+                    FaceRecognition recognizeFace = faceRecognitionFutureTask.get();
+                    textPaint.getTextBounds(recognizeFace.getName(),0,recognizeFace.getName().length(),bounds);
+                    canvas.drawRect((int) translateX(faces.get(i).getBoundingBox().left),
+                            (int) translateY(faces.get(i).getBoundingBox().top - bounds.height()+10),
+                            (int) translateX(faces.get(i).getBoundingBox().right),
+                            (int) translateY(faces.get(i).getBoundingBox().top),drawPaint);
+
+                    canvas.drawText(recognizeFace.getName(),
+                            translateX(faces.get(i).getBoundingBox().centerX()),
+                            translateY(faces.get(i).getBoundingBox().top-5),
+                            textPaint);
+
+                    //Log.d("face",recognizeFace.getName());
+                    //draw a rect box around each face
+                    box = new Rect((int) translateX(faces.get(i).getBoundingBox().left),
+                            (int) translateY(faces.get(i).getBoundingBox().top),
+                            (int) translateX(faces.get(i).getBoundingBox().right),
+                            (int) translateY(faces.get(i).getBoundingBox().bottom));
+                    canvas.drawRect(box, paint);
+                    count+=1;
+                }
+            }
+
         }
         imageView.setImageBitmap(abitmap);
     }
