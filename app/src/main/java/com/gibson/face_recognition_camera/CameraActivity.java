@@ -66,6 +66,10 @@ public class CameraActivity extends AppCompatActivity {
     private TextView sign_out_tv, edit_tv, add_tv, brightness_tv;
     private boolean clicked = false;
 
+    //Todo implement a foreground service for app if required by the smart glasses
+    // so that the app will be running in the background while streaming its output to the
+    // smart glasses and users will be able to use the phone for other processes
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
