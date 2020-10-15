@@ -145,6 +145,9 @@ public class CameraActivity extends AppCompatActivity {
             }
         }).start();
 
+        //Todo: Rethink approach here as interpreter is running on the main thread which may be the cause of lags when too many faces appear within a frame
+        // as it is blocking the main thread (UI thread) from drawing the rect boxes around faces or loading the FAB animation smoothly
+
         // <<Load the facial recognition model  >>
         faceNet = null;
         try {
