@@ -74,30 +74,11 @@ public class CameraActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_camera);
-        textureView = findViewById(R.id.textureView);
-        imageView  = findViewById(R.id.imageView);
-        faceRecognitionList = new ArrayList<>();
-        GoogleSignInAccount account = GoogleSignIn.getLastSignedInAccount(this);
-        emailAddr = account.getEmail();
-        menuFab = findViewById(R.id.menu_fab);
-        sign_out_fab = findViewById(R.id.sign_out_fab);
-        brightnessFab = findViewById(R.id.brightness_fab);
-        editFab =  findViewById(R.id.edit_fab);
-        addFab = findViewById(R.id.add_fab);
-        sign_out_tv = findViewById(R.id.sign_out_tv);
-        edit_tv = findViewById(R.id.editTextView);
-        add_tv = findViewById(R.id.addTextView);
-        brightness_tv = findViewById(R.id.brightnessTextView);
-        rotateOpen = AnimationUtils.loadAnimation(CameraActivity.this,R.anim.rotate_open_anim);
-        rotateClose = AnimationUtils.loadAnimation(CameraActivity.this,R.anim.rotate_close_anim);
-        fromBottom = AnimationUtils.loadAnimation(CameraActivity.this,R.anim.from_bottom_anim);
-        toBottom = AnimationUtils.loadAnimation(CameraActivity.this,R.anim.to_bottom_anim);
-        showHelperText = AnimationUtils.loadAnimation(CameraActivity.this, R.anim.show_hint);
-        hideHelperText = AnimationUtils.loadAnimation(CameraActivity.this, R.anim.hide_hint);
+        bindDisplayItem();
+        loadAnimation();
         GoogleSignInOptions gso = new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
                 .requestEmail()
                 .build();
-
         mGoogleSignInClient = GoogleSignIn.getClient(this, gso);
 
         menuFab.setOnClickListener(new View.OnClickListener() {
@@ -170,6 +151,32 @@ public class CameraActivity extends AppCompatActivity {
                 signOut();
             }
         });
+    }
+
+    private void  bindDisplayItem() {
+        textureView = findViewById(R.id.textureView);
+        imageView  = findViewById(R.id.imageView);
+        faceRecognitionList = new ArrayList<>();
+        GoogleSignInAccount account = GoogleSignIn.getLastSignedInAccount(this);
+        emailAddr = account.getEmail();
+        menuFab = findViewById(R.id.menu_fab);
+        sign_out_fab = findViewById(R.id.sign_out_fab);
+        brightnessFab = findViewById(R.id.brightness_fab);
+        editFab =  findViewById(R.id.edit_fab);
+        addFab = findViewById(R.id.add_fab);
+        sign_out_tv = findViewById(R.id.sign_out_tv);
+        edit_tv = findViewById(R.id.editTextView);
+        add_tv = findViewById(R.id.addTextView);
+        brightness_tv = findViewById(R.id.brightnessTextView);
+    }
+
+    private void loadAnimation(){
+        rotateOpen = AnimationUtils.loadAnimation(CameraActivity.this,R.anim.rotate_open_anim);
+        rotateClose = AnimationUtils.loadAnimation(CameraActivity.this,R.anim.rotate_close_anim);
+        fromBottom = AnimationUtils.loadAnimation(CameraActivity.this,R.anim.from_bottom_anim);
+        toBottom = AnimationUtils.loadAnimation(CameraActivity.this,R.anim.to_bottom_anim);
+        showHelperText = AnimationUtils.loadAnimation(CameraActivity.this, R.anim.show_hint);
+        hideHelperText = AnimationUtils.loadAnimation(CameraActivity.this, R.anim.hide_hint);
     }
 
     private void showHelperTextAnimation(boolean clicked) {
