@@ -19,6 +19,7 @@ import androidx.core.content.ContextCompat;
 import android.annotation.SuppressLint;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
 import android.util.Size;
@@ -31,10 +32,6 @@ import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.google.android.gms.auth.api.signin.GoogleSignIn;
-import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
-import com.google.android.gms.auth.api.signin.GoogleSignInClient;
-import com.google.android.gms.auth.api.signin.GoogleSignInOptions;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
@@ -144,6 +141,29 @@ public class CameraActivity extends AppCompatActivity {
             ActivityCompat.requestPermissions(this, REQUIRED_PERMISSIONS, REQUEST_CODE_PERMISSIONS);
         }
 
+        editFab.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                PackageManager pm = CameraActivity.this.getPackageManager();
+                boolean isInstalled = isPackageInstalled("com.google.ar.lens", pm);
+                if(isInstalled){
+                    //Toast.makeText(CameraActivity.this, "Google lens already installed", Toast.LENGTH_SHORT).show();
+                    Intent launchGL = getPackageManager().getLaunchIntentForPackage("com.google.ar.lens");
+                    if(launchGL != null) {
+                        startActivity(launchGL);
+                    }
+                }
+                else {
+                    try{
+                        Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id=com.google.ar.lens"));
+                        startActivity(intent);
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
+        });
+
         sign_out_fab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -162,7 +182,7 @@ public class CameraActivity extends AppCompatActivity {
         menuFab = findViewById(R.id.menu_fab);
         sign_out_fab = findViewById(R.id.sign_out_fab);
         brightnessFab = findViewById(R.id.brightness_fab);
-        editFab =  findViewById(R.id.edit_fab);
+        editFab =  findViewById(R.id.search_fab);
         addFab = findViewById(R.id.add_fab);
         sign_out_tv = findViewById(R.id.sign_out_tv);
         edit_tv = findViewById(R.id.editTextView);
@@ -332,6 +352,17 @@ public class CameraActivity extends AppCompatActivity {
                 Toast.makeText(this, "Permissions not granted by the user.", Toast.LENGTH_SHORT).show();
                 this.finish();
             }
+        }
+    }
+
+    //check if an app required is already installed
+    private boolean isPackageInstalled(String packageName, PackageManager packageManager) {
+        try {
+            packageManager.getPackageInfo(packageName,0);
+            return true;
+        } catch (PackageManager.NameNotFoundException e) {
+            e.printStackTrace();
+            return false;
         }
     }
 

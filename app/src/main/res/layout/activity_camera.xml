@@ -54,7 +54,7 @@
         app:srcCompat="@drawable/white_sign_out_logo" />
 
     <com.google.android.material.floatingactionbutton.FloatingActionButton
-        android:id="@+id/edit_fab"
+        android:id="@+id/search_fab"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:clickable="true"
@@ -65,7 +65,7 @@
         app:layout_constraintEnd_toEndOf="@+id/brightness_fab"
         app:layout_constraintHorizontal_bias="1.0"
         app:layout_constraintStart_toStartOf="@+id/brightness_fab"
-        app:srcCompat="@drawable/white_edit_logo" />
+        app:srcCompat="@drawable/ic_google_lens" />
 
     <com.google.android.material.floatingactionbutton.FloatingActionButton
         android:id="@+id/add_fab"
@@ -75,10 +75,10 @@
         android:focusable="true"
         android:visibility="invisible"
         app:backgroundTint="#FFC0CB"
-        app:layout_constraintBottom_toTopOf="@+id/edit_fab"
-        app:layout_constraintEnd_toEndOf="@+id/edit_fab"
+        app:layout_constraintBottom_toTopOf="@+id/search_fab"
+        app:layout_constraintEnd_toEndOf="@+id/search_fab"
         app:layout_constraintHorizontal_bias="0.0"
-        app:layout_constraintStart_toStartOf="@+id/edit_fab"
+        app:layout_constraintStart_toStartOf="@+id/search_fab"
         app:srcCompat="@drawable/white_plus_logo" />
 
     <com.google.android.material.floatingactionbutton.FloatingActionButton
@@ -104,23 +104,23 @@
         android:text="Add"
         android:textAlignment="center"
         android:visibility="invisible"
-        app:layout_constraintBottom_toTopOf="@+id/edit_fab"
+        app:layout_constraintBottom_toTopOf="@+id/search_fab"
         app:layout_constraintEnd_toStartOf="@+id/add_fab"
         app:layout_constraintTop_toTopOf="@+id/add_fab"
         app:layout_constraintVertical_bias="0.567" />
 
     <TextView
         android:id="@+id/editTextView"
-        android:layout_width="30sp"
-        android:layout_height="wrap_content"
+        android:layout_width="83dp"
+        android:layout_height="21dp"
         android:background="@color/light_grey"
         android:fontFamily="@font/regular"
-        android:text="Edit"
+        android:text="Google Lens"
         android:textAlignment="center"
         android:visibility="invisible"
-        app:layout_constraintBottom_toBottomOf="@+id/edit_fab"
-        app:layout_constraintEnd_toStartOf="@+id/edit_fab"
-        app:layout_constraintTop_toTopOf="@+id/edit_fab"
+        app:layout_constraintBottom_toBottomOf="@+id/search_fab"
+        app:layout_constraintEnd_toStartOf="@+id/search_fab"
+        app:layout_constraintTop_toTopOf="@+id/search_fab"
         app:layout_constraintVertical_bias="0.513" />
 
     <TextView
@@ -134,7 +134,7 @@
         android:visibility="invisible"
         app:layout_constraintBottom_toTopOf="@+id/sign_out_fab"
         app:layout_constraintEnd_toStartOf="@+id/brightness_fab"
-        app:layout_constraintTop_toBottomOf="@+id/edit_fab" />
+        app:layout_constraintTop_toBottomOf="@+id/search_fab" />
 
     <TextView
         android:id="@+id/sign_out_tv"
