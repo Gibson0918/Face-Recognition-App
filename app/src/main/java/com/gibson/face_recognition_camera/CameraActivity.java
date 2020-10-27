@@ -38,6 +38,8 @@ import com.google.android.gms.auth.api.signin.GoogleSignInOptions;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
 import com.google.firebase.firestore.QuerySnapshot;
@@ -59,12 +61,14 @@ public class CameraActivity extends AppCompatActivity {
     private FaceNet faceNet;
     private List<FaceRecognition> faceRecognitionList;
     private FirebaseFirestore db;
-    private GoogleSignInClient mGoogleSignInClient;
     private String emailAddr;
     private Animation rotateOpen, rotateClose, fromBottom, toBottom, showHelperText, hideHelperText;
     private FloatingActionButton menuFab, sign_out_fab, editFab, addFab, brightnessFab;
     private TextView sign_out_tv, edit_tv, add_tv, brightness_tv;
     private boolean clicked = false;
+    private FirebaseAuth mAuth;
+    private FirebaseUser currentUser;
+
 
     //Todo implement a foreground service for app if required by the smart glasses
     // so that the app will be running in the background while streaming its output to the
@@ -76,10 +80,6 @@ public class CameraActivity extends AppCompatActivity {
         setContentView(R.layout.activity_camera);
         bindDisplayItem();
         loadAnimation();
-        GoogleSignInOptions gso = new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
-                .requestEmail()
-                .build();
-        mGoogleSignInClient = GoogleSignIn.getClient(this, gso);
 
         menuFab.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -112,7 +112,6 @@ public class CameraActivity extends AppCompatActivity {
                                 float[][] faceEmbeddings = new float[1][192];
                                 //List<Float> embeddings = (List<Float>) documentSnapshot.get("Embeddings");
                                 List<Double> embeddings = (List<Double>) documentSnapshot.get("Embeddings");
-
                                 for(int i=0; i < 192; i++) {
                                     assert embeddings != null;
                                     faceEmbeddings[0][i] = embeddings.get(i).floatValue();
@@ -157,8 +156,9 @@ public class CameraActivity extends AppCompatActivity {
         textureView = findViewById(R.id.textureView);
         imageView  = findViewById(R.id.imageView);
         faceRecognitionList = new ArrayList<>();
-        GoogleSignInAccount account = GoogleSignIn.getLastSignedInAccount(this);
-        emailAddr = account.getEmail();
+        mAuth = FirebaseAuth.getInstance();
+        currentUser = mAuth.getCurrentUser();
+        emailAddr = currentUser.getEmail();
         menuFab = findViewById(R.id.menu_fab);
         sign_out_fab = findViewById(R.id.sign_out_fab);
         brightnessFab = findViewById(R.id.brightness_fab);
@@ -343,15 +343,11 @@ public class CameraActivity extends AppCompatActivity {
     }
 
     private void signOut() {
-        mGoogleSignInClient.signOut()
-                .addOnCompleteListener(this, new OnCompleteListener<Void>() {
-                    @Override
-                    public void onComplete(@NonNull Task<Void> task) {
-                        Toast.makeText(CameraActivity.this, "Signed out successfully", Toast.LENGTH_LONG).show();
-                        Intent intent = new Intent(CameraActivity.this, LoginActivity.class);
-                        startActivity(intent);
-                        finish();
-                    }
-                });
+                FirebaseAuth.getInstance().signOut();
+                Toast.makeText(CameraActivity.this, "Signed out successfully", Toast.LENGTH_LONG).show();
+                Intent intent = new Intent(CameraActivity.this, LoginActivity.class);
+                startActivity(intent);
+                finish();
+
     }
 }
