@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <item name="menu_fab" type="id"></item>
+    <item name="space1" type="id"></item>
+    <item name="sign_out_fab" type="id"></item>
+    <item name="space2" type="id"></item>
+    <item name="space3" type="id"></item>
+    <item name="add_fab" type="id"></item>
+    <item name="space4" type="id"></item>
+    <item name="brightness_fab" type="id"></item>
+    <item name="constraintlayout1" type="id" />
+    <item name="textureView" type="id"></item>
+    <item name="imageView" type="id"></item>
+    <item name="search_fab" type="id"></item>
+    <item name="coordinatorlayout1" type="id" />
+    <item name="space5" type="id"></item>
+    <item name="space6" type="id"></item>
+    <item name="space7" type="id"></item>
+    <item name="space8" type="id"></item>
+    <item name="sign_out_tv" type="id" />
+    <item name="editTextView" type="id" />
+    <item name="addTextView" type="id" />
+    <item name="brightnessTextView" type="id" />
+</resources>

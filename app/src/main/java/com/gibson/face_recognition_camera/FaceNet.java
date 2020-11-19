@@ -1,17 +1,28 @@
 package com.gibson.face_recognition_camera;
 
+import android.content.SharedPreferences;
 import android.content.res.AssetFileDescriptor;
 import android.content.res.AssetManager;
 import android.graphics.Bitmap;
 import android.os.Build;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.RequiresApi;
 
+import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
+import com.google.android.gms.tasks.Task;
+import com.google.firebase.firestore.CollectionReference;
 import com.google.firebase.firestore.DocumentReference;
+import com.google.firebase.firestore.DocumentSnapshot;
+import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.Query;
+import com.google.firebase.firestore.SetOptions;
+import com.google.firestore.v1.WriteResult;
+
 
 import org.tensorflow.lite.Interpreter;
 import org.tensorflow.lite.gpu.CompatibilityList;
@@ -19,6 +30,7 @@ import org.tensorflow.lite.gpu.GpuDelegate;
 
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.lang.reflect.Field;
 import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -39,6 +51,7 @@ public class FaceNet {
     private static final int NUM_CHANNELS = 3;
     private static final int NUM_BYTES_PER_CHANNEL = 4;
     private static final int EMBEDDING_SIZE = 192;
+
 
     private final int [] intValues = new int [IMAGE_HEIGHT * IMAGE_WIDTH];
     private ByteBuffer imgData;
@@ -151,7 +164,7 @@ public class FaceNet {
     }
 
 
-    public List<FaceRecognition> addFaceToRecognitionList(String name, Bitmap bitmap, List<FaceRecognition> faceRecognitionList, FirebaseFirestore db, String emailAddr){
+    public List<FaceRecognition> addFaceToRecognitionList(String name, String encodedBase64 ,Bitmap bitmap, List<FaceRecognition> faceRecognitionList, FirebaseFirestore db, String emailAddr){
         float[][] faceEmbeddings = run(bitmap);
         FaceRecognition face = new FaceRecognition(name, faceEmbeddings);
         faceRecognitionList.add(face);
@@ -164,6 +177,8 @@ public class FaceNet {
             embeddingsList.add(faceEmbeddings[0][i]);
         }
         faces.put("Embeddings",embeddingsList);
+        faces.put("TimeStamp", FieldValue.serverTimestamp());
+        faces.put("Base64", encodedBase64);
         db.collection(emailAddr).add(faces).addOnSuccessListener(new OnSuccessListener<DocumentReference>() {
             @Override
             public void onSuccess(DocumentReference documentReference) {
@@ -175,6 +190,8 @@ public class FaceNet {
                 //Log.d("Failed",e.toString());
             }
         });
+
+
         return faceRecognitionList;
     }
 

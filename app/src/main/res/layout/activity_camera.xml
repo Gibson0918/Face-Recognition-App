@@ -1,15 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/coordinatorLayout"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     tools:context=".CameraActivity">
 
+
     <TextureView
         android:id="@+id/textureView"
-        android:layout_width="0dp"
-        android:layout_height="0dp"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
@@ -17,8 +19,8 @@
 
     <ImageView
         android:id="@+id/imageView"
-        android:layout_width="0dp"
-        android:layout_height="0dp"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.0"
@@ -30,27 +32,33 @@
         android:id="@+id/menu_fab"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginEnd="16dp"
-        android:layout_marginBottom="16dp"
+        android:layout_gravity="bottom|right"
+        android:layout_marginRight="20sp"
+        android:layout_marginBottom="20sp"
         android:clickable="true"
+        android:focusable="true"
         app:backgroundTint="#673AB7"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
         app:srcCompat="@drawable/white_settings_logo" />
+
+    <Space
+        android:id="@+id/space1"
+        android:layout_width="56dp"
+        android:layout_height="10dp"
+        android:layout_gravity="end"
+        android:paddingTop="20sp"
+        android:paddingBottom="20sp"
+        app:layout_anchor="@id/menu_fab" />
 
     <com.google.android.material.floatingactionbutton.FloatingActionButton
         android:id="@+id/sign_out_fab"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginBottom="4dp"
         android:clickable="true"
         android:focusable="true"
         android:visibility="invisible"
         app:backgroundTint="#FFC0CB"
-        app:layout_constraintBottom_toTopOf="@+id/menu_fab"
-        app:layout_constraintEnd_toEndOf="@+id/menu_fab"
-        app:layout_constraintHorizontal_bias="0.0"
-        app:layout_constraintStart_toStartOf="@+id/menu_fab"
+        app:layout_anchor="@+id/space1"
+        android:layout_gravity="end"
         app:srcCompat="@drawable/white_sign_out_logo" />
 
     <com.google.android.material.floatingactionbutton.FloatingActionButton
@@ -61,11 +69,9 @@
         android:focusable="true"
         android:visibility="invisible"
         app:backgroundTint="#FFC0CB"
-        app:layout_constraintBottom_toTopOf="@+id/brightness_fab"
-        app:layout_constraintEnd_toEndOf="@+id/brightness_fab"
-        app:layout_constraintHorizontal_bias="1.0"
-        app:layout_constraintStart_toStartOf="@+id/brightness_fab"
-        app:srcCompat="@drawable/ic_google_lens" />
+        app:srcCompat="@drawable/ic_google_lens"
+        android:layout_gravity="end"
+        app:layout_anchor="@id/edit_fab"/>
 
     <com.google.android.material.floatingactionbutton.FloatingActionButton
         android:id="@+id/add_fab"
@@ -75,42 +81,38 @@
         android:focusable="true"
         android:visibility="invisible"
         app:backgroundTint="#FFC0CB"
-        app:layout_constraintBottom_toTopOf="@+id/search_fab"
-        app:layout_constraintEnd_toEndOf="@+id/search_fab"
-        app:layout_constraintHorizontal_bias="0.0"
-        app:layout_constraintStart_toStartOf="@+id/search_fab"
-        app:srcCompat="@drawable/white_plus_logo" />
+        app:srcCompat="@drawable/white_plus_logo"
+        android:layout_gravity="end"
+        app:layout_anchor="@id/search_fab"
+        />
 
     <com.google.android.material.floatingactionbutton.FloatingActionButton
-        android:id="@+id/brightness_fab"
+        android:id="@+id/edit_fab"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:clickable="true"
         android:focusable="true"
         android:visibility="invisible"
         app:backgroundTint="#FFC0CB"
-        app:layout_constraintBottom_toTopOf="@+id/sign_out_fab"
-        app:layout_constraintEnd_toEndOf="@+id/sign_out_fab"
-        app:layout_constraintHorizontal_bias="0.0"
-        app:layout_constraintStart_toStartOf="@+id/sign_out_fab"
-        app:srcCompat="@drawable/white_brightness_setting_logo" />
+        app:srcCompat="@drawable/white_brightness_setting_logo"
+        android:layout_gravity="end"
+        app:layout_anchor="@id/sign_out_fab"/>
 
     <TextView
         android:id="@+id/addTextView"
-        android:layout_width="30sp"
+        android:layout_width="35sp"
         android:layout_height="wrap_content"
+        android:layout_gravity="center|left"
         android:background="@color/light_grey"
         android:fontFamily="@font/regular"
         android:text="Add"
         android:textAlignment="center"
         android:visibility="invisible"
-        app:layout_constraintBottom_toTopOf="@+id/search_fab"
-        app:layout_constraintEnd_toStartOf="@+id/add_fab"
-        app:layout_constraintTop_toTopOf="@+id/add_fab"
-        app:layout_constraintVertical_bias="0.567" />
+        app:layout_anchor="@id/add_fab"
+        app:layout_anchorGravity="center_vertical" />
 
     <TextView
-        android:id="@+id/editTextView"
+        android:id="@+id/searchTextView"
         android:layout_width="83dp"
         android:layout_height="21dp"
         android:background="@color/light_grey"
@@ -118,23 +120,22 @@
         android:text="Google Lens"
         android:textAlignment="center"
         android:visibility="invisible"
-        app:layout_constraintBottom_toBottomOf="@+id/search_fab"
-        app:layout_constraintEnd_toStartOf="@+id/search_fab"
-        app:layout_constraintTop_toTopOf="@+id/search_fab"
-        app:layout_constraintVertical_bias="0.513" />
+        app:layout_anchor="@id/search_fab"
+        android:layout_gravity="center|left"
+        app:layout_anchorGravity="center_vertical"/>
 
     <TextView
-        android:id="@+id/brightnessTextView"
-        android:layout_width="70sp"
+        android:id="@+id/editTextView"
+        android:layout_width="45sp"
         android:layout_height="wrap_content"
+        android:layout_gravity="center|left"
         android:background="@color/light_grey"
         android:fontFamily="@font/regular"
-        android:text="Brightness"
+        android:text="Album"
         android:textAlignment="center"
         android:visibility="invisible"
-        app:layout_constraintBottom_toTopOf="@+id/sign_out_fab"
-        app:layout_constraintEnd_toStartOf="@+id/brightness_fab"
-        app:layout_constraintTop_toBottomOf="@+id/search_fab" />
+        app:layout_anchor="@id/edit_fab"
+        app:layout_anchorGravity="center_vertical" />
 
     <TextView
         android:id="@+id/sign_out_tv"
@@ -145,8 +146,8 @@
         android:text="Sign Out"
         android:textAlignment="center"
         android:visibility="invisible"
-        app:layout_constraintBottom_toBottomOf="@+id/sign_out_fab"
-        app:layout_constraintEnd_toStartOf="@+id/sign_out_fab"
-        app:layout_constraintTop_toTopOf="@+id/sign_out_fab"
-        app:layout_constraintVertical_bias="0.459" />
-</androidx.constraintlayout.widget.ConstraintLayout>
+        app:layout_anchor="@id/sign_out_fab"
+        android:layout_gravity="center|left"
+        app:layout_anchorGravity="center_vertical"/>
+
+</androidx.coordinatorlayout.widget.CoordinatorLayout>

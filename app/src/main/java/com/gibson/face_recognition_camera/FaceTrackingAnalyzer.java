@@ -3,6 +3,8 @@ package com.gibson.face_recognition_camera;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
+import android.content.Intent;
+import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
@@ -11,11 +13,14 @@ import android.graphics.PorterDuff;
 import android.graphics.PorterDuffXfermode;
 import android.graphics.Rect;
 import android.os.Build;
+import android.provider.MediaStore;
+import android.util.Base64;
 import android.view.LayoutInflater;
 import android.view.TextureView;
 import android.view.View;
 import android.widget.EditText;
 import android.widget.ImageView;
+import android.widget.RadioButton;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -25,8 +30,12 @@ import androidx.camera.core.CameraX;
 import androidx.camera.core.ImageAnalysis;
 import androidx.camera.core.ImageProxy;
 
+import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.OnFailureListener;
+import com.google.android.gms.tasks.Task;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
+import com.google.firebase.firestore.DocumentReference;
+import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.ml.vision.FirebaseVision;
 import com.google.firebase.ml.vision.common.FirebaseVisionImage;
@@ -36,6 +45,7 @@ import com.google.firebase.ml.vision.face.FirebaseVisionFaceDetector;
 import com.google.firebase.ml.vision.face.FirebaseVisionFaceDetectorOptions;
 
 
+import java.io.ByteArrayOutputStream;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
@@ -127,10 +137,15 @@ public class FaceTrackingAnalyzer extends CameraActivity implements ImageAnalysi
                                             String name = etName.getText().toString();
                                             if (name.isEmpty()) {
                                                 Toast.makeText(context, "Please enter name", Toast.LENGTH_SHORT).show();
-                                            } else {
-                                                //Todo: Implement Cloud storage for images to  be stored for each faces
-                                                faceRecognitionList = faceNet.addFaceToRecognitionList(name, croppedFaceBitmap, faceRecognitionList, db, emailAddr);
+                                            }
+                                            else {
+                                                ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+                                                fbImage.getBitmap().compress(Bitmap.CompressFormat.PNG, 100, byteArrayOutputStream);
+                                                byte[] byteArray = byteArrayOutputStream .toByteArray();
+                                                String encoded = Base64.encodeToString(byteArray, Base64.DEFAULT);
+                                                faceRecognitionList = faceNet.addFaceToRecognitionList(name, encoded ,croppedFaceBitmap, faceRecognitionList, db, emailAddr);
                                                 dialogInterface.dismiss();
+
                                             }
                                         }
                                     });

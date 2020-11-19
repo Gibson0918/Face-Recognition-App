@@ -17,12 +17,15 @@ import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
 import android.annotation.SuppressLint;
+import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.hardware.display.DisplayManager;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
 import android.util.Size;
+import android.view.Display;
 import android.view.TextureView;
 import android.view.View;
 import android.view.ViewGroup;
@@ -35,11 +38,13 @@ import android.widget.Toast;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
+import com.google.android.material.snackbar.Snackbar;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
 import com.google.firebase.firestore.QuerySnapshot;
+import com.madgaze.smartglass.otg.sensor.SplitUSBSerial;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -60,116 +65,190 @@ public class CameraActivity extends AppCompatActivity {
     private FirebaseFirestore db;
     private String emailAddr;
     private Animation rotateOpen, rotateClose, fromBottom, toBottom, showHelperText, hideHelperText;
-    private FloatingActionButton menuFab, sign_out_fab, editFab, addFab, brightnessFab;
-    private TextView sign_out_tv, edit_tv, add_tv, brightness_tv;
+    private FloatingActionButton menuFab, sign_out_fab, searchFab, addFab, editFab;
+    private TextView sign_out_tv, search_tv, add_tv,edit_tv;
     private boolean clicked = false;
     private FirebaseAuth mAuth;
     private FirebaseUser currentUser;
+    private ScreenPresentation screenPresentation;
+    private DisplayManager displayManager;
+    private Snackbar snackbar;
+    private List<String> nameList = new ArrayList<>();
 
-
-    //Todo implement a foreground service for app if required by the smart glasses
-    // so that the app will be running in the background while streaming its output to the
-    // smart glasses and users will be able to use the phone for other processes
+    /*Todo implement a presentation class to mirror phone output to smart glasses*/
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_camera);
-        bindDisplayItem();
-        loadAnimation();
+        boolean isConnected = SplitUSBSerial.getInstance(this).isDeviceConnected();
+        if (isConnected) {
+            snackbar = Snackbar.make(findViewById(R.id.coordinatorLayout),"Glow is connected! Switching to Glow", Snackbar.LENGTH_LONG);
+            snackbar.show();
+            initVideo();
+        }
+        else {
+            snackbar = Snackbar.make(findViewById(R.id.coordinatorLayout),"Glow isn't connected! Using Device's camera", Snackbar.LENGTH_LONG);
+            snackbar.show();
+            bindDisplayItem();
+            loadAnimation();
 
-        menuFab.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                setVisibilityFab(clicked);
-                setAnimation(clicked);
-                setClickableFab(clicked);
-                showHelperText(clicked);
-                showHelperTextAnimation(clicked);
-                if(!clicked) {
-                    clicked = true;
-                }
-                else {
-                    clicked = false;
-                }
-            }
-        });
 
-        //Populate the faceRecognitionList on startup from firestore'
-        //running fireStore request on a new thread
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                db = FirebaseFirestore.getInstance();
-                db.collection(emailAddr).get().addOnCompleteListener(new OnCompleteListener<QuerySnapshot>() {
-                    @Override
-                    public void onComplete(@NonNull Task<QuerySnapshot> task) {
-                        if(task.isSuccessful()) {
-                            for(QueryDocumentSnapshot documentSnapshot : Objects.requireNonNull(task.getResult())) {
-                                float[][] faceEmbeddings = new float[1][192];
-                                //List<Float> embeddings = (List<Float>) documentSnapshot.get("Embeddings");
-                                List<Double> embeddings = (List<Double>) documentSnapshot.get("Embeddings");
-                                for(int i=0; i < 192; i++) {
-                                    assert embeddings != null;
-                                    faceEmbeddings[0][i] = embeddings.get(i).floatValue();
+            menuFab.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View view) {
+                    setVisibilityFab(clicked);
+                    setAnimation(clicked);
+                    setClickableFab(clicked);
+                    showHelperText(clicked);
+                    showHelperTextAnimation(clicked);
+                    if (!clicked) {
+                        clicked = true;
+                        /*if (clicked == true) {
+                            new Handler().postDelayed(new Runnable() {
+                                @Override
+                                public void run() {
+                                    menuFab.performClick();
+                                    clicked = false;
                                 }
-                                FaceRecognition face = new FaceRecognition(documentSnapshot.get("Name").toString(), faceEmbeddings);
-                                faceRecognitionList.add(face);
+                            }, 10000);
+                        }*/
+                    } else {
+                        clicked = false;
+                    }
+                }
+            });
+
+            new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    db = FirebaseFirestore.getInstance();
+                    db.collection(emailAddr).get().addOnCompleteListener(new OnCompleteListener<QuerySnapshot>() {
+                        @Override
+                        public void onComplete(@NonNull Task<QuerySnapshot> task) {
+                            if (task.isSuccessful()) {
+                                for (QueryDocumentSnapshot documentSnapshot : Objects.requireNonNull(task.getResult())) {
+                                    if(nameList.contains(documentSnapshot.get("Name").toString())){
+                                        continue;
+                                    }
+                                    else {
+                                        nameList.add(documentSnapshot.get("Name").toString());
+                                    }
+                                }
+                                nameList.sort(String::compareToIgnoreCase);
+                                nameList.add(0,"Show All");
                             }
                         }
-                    }
-                });
+                    });
+                }
+            }).start();
+
+        /*Populate the faceRecognitionList on startup from firestore
+        running fireStore request on a new thread*/
+            new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    db = FirebaseFirestore.getInstance();
+                    db.collection(emailAddr).get().addOnCompleteListener(new OnCompleteListener<QuerySnapshot>() {
+                        @Override
+                        public void onComplete(@NonNull Task<QuerySnapshot> task) {
+                            if (task.isSuccessful()) {
+                                for (QueryDocumentSnapshot documentSnapshot : Objects.requireNonNull(task.getResult())) {
+                                    float[][] faceEmbeddings = new float[1][192];
+                                    //List<Float> embeddings = (List<Float>) documentSnapshot.get("Embeddings");
+                                    List<Double> embeddings = (List<Double>) documentSnapshot.get("Embeddings");
+                                    for (int i = 0; i < 192; i++) {
+                                        assert embeddings != null;
+                                        faceEmbeddings[0][i] = embeddings.get(i).floatValue();
+                                    }
+                                    FaceRecognition face = new FaceRecognition(documentSnapshot.get("Name").toString(), faceEmbeddings);
+                                    faceRecognitionList.add(face);
+                                }
+                            }
+                        }
+                    });
+                }
+            }).start();
+
+
+
+
+            // <<Load the facial recognition model  >>
+            faceNet = null;
+            try {
+                faceNet = new FaceNet(getAssets());
+            } catch (Exception e) {
+                Toast.makeText(CameraActivity.this, "Model not loaded successfully", Toast.LENGTH_SHORT).show();
             }
-        }).start();
 
-        //Todo: Rethink approach here as interpreter is running on the main thread which may be the cause of lags when too many faces appear within a frame
-        // as it is blocking the main thread (UI thread) from drawing the rect boxes around faces or loading the FAB animation smoothly
+            //check permission for camera
+            if (allPermissionsGranted()) {
+                textureView.post(this::startCamera); //start camera if permission has been granted by user
+            } else {
+                ActivityCompat.requestPermissions(this, REQUIRED_PERMISSIONS, REQUEST_CODE_PERMISSIONS);
+            }
 
-        // <<Load the facial recognition model  >>
-        faceNet = null;
-        try {
-            faceNet = new FaceNet(getAssets());
-        }
-        catch (Exception e){
-            Toast.makeText(CameraActivity.this, "Model not loaded successfully", Toast.LENGTH_SHORT).show();
-        }
-
-        //check permission for camera
-        if(allPermissionsGranted()){
-            textureView.post(this::startCamera); //start camera if permission has been granted by user
-        } else{
-            ActivityCompat.requestPermissions(this, REQUIRED_PERMISSIONS, REQUEST_CODE_PERMISSIONS);
-        }
-
-        editFab.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                PackageManager pm = CameraActivity.this.getPackageManager();
-                boolean isInstalled = isPackageInstalled("com.google.ar.lens", pm);
-                if(isInstalled){
-                    //Toast.makeText(CameraActivity.this, "Google lens already installed", Toast.LENGTH_SHORT).show();
-                    Intent launchGL = getPackageManager().getLaunchIntentForPackage("com.google.ar.lens");
-                    if(launchGL != null) {
-                        startActivity(launchGL);
+            searchFab.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    PackageManager pm = CameraActivity.this.getPackageManager();
+                    boolean isInstalled = isPackageInstalled("com.google.ar.lens", pm);
+                    if (isInstalled) {
+                        //Toast.makeText(CameraActivity.this, "Google lens already installed", Toast.LENGTH_SHORT).show();
+                        Intent launchGL = getPackageManager().getLaunchIntentForPackage("com.google.ar.lens");
+                        if (launchGL != null) {
+                            startActivity(launchGL);
+                        }
+                    } else {
+                        try {
+                            Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id=com.google.ar.lens"));
+                            startActivity(intent);
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
                     }
                 }
-                else {
-                    try{
-                        Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id=com.google.ar.lens"));
-                        startActivity(intent);
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                    }
-                }
-            }
-        });
+            });
 
-        sign_out_fab.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                signOut();
+            editFab.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    Intent intent = new Intent(CameraActivity.this, EditActivity.class);
+                    intent.putStringArrayListExtra("nameList", (ArrayList<String>) nameList);
+                    startActivity(intent);
+                }
+            });
+
+            sign_out_fab.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View view) {
+                    signOut();
+                }
+            });
+        }
+    }
+
+    @Override
+    protected void onStart(){
+        super.onStart();
+        SplitUSBSerial.getInstance(this).onStart();
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        SplitUSBSerial.getInstance(this).onStart();
+    }
+
+    private void initVideo() {
+        if(displayManager == null) {
+            displayManager = (DisplayManager) getSystemService(Context.DISPLAY_SERVICE);
+            Display[] displays = displayManager.getDisplays();
+            if(displays.length > 1) {
+                screenPresentation = new ScreenPresentation(CameraActivity.this, displays[1]);
+                screenPresentation.show();
             }
-        });
+        }
     }
 
     private void  bindDisplayItem() {
@@ -181,13 +260,13 @@ public class CameraActivity extends AppCompatActivity {
         emailAddr = currentUser.getEmail();
         menuFab = findViewById(R.id.menu_fab);
         sign_out_fab = findViewById(R.id.sign_out_fab);
-        brightnessFab = findViewById(R.id.brightness_fab);
-        editFab =  findViewById(R.id.search_fab);
+        editFab = findViewById(R.id.edit_fab);
+        searchFab =  findViewById(R.id.search_fab);
         addFab = findViewById(R.id.add_fab);
         sign_out_tv = findViewById(R.id.sign_out_tv);
-        edit_tv = findViewById(R.id.editTextView);
+        search_tv = findViewById(R.id.searchTextView);
         add_tv = findViewById(R.id.addTextView);
-        brightness_tv = findViewById(R.id.brightnessTextView);
+        edit_tv = findViewById(R.id.editTextView);
     }
 
     private void loadAnimation(){
@@ -202,14 +281,14 @@ public class CameraActivity extends AppCompatActivity {
     private void showHelperTextAnimation(boolean clicked) {
         if(!clicked) {
             sign_out_tv.startAnimation(showHelperText);
-            brightness_tv.startAnimation(showHelperText);
             edit_tv.startAnimation(showHelperText);
+            search_tv.startAnimation(showHelperText);
             add_tv.startAnimation(showHelperText);
         }
         else {
             sign_out_tv.startAnimation(hideHelperText);
-            brightness_tv.startAnimation(hideHelperText);
             edit_tv.startAnimation(hideHelperText);
+            search_tv.startAnimation(hideHelperText);
             add_tv.startAnimation(hideHelperText);
         }
     }
@@ -217,18 +296,18 @@ public class CameraActivity extends AppCompatActivity {
     private void showHelperText(boolean clicked) {
         if(!clicked) {
             sign_out_tv.setVisibility(View.VISIBLE);
-            brightness_tv.setVisibility(View.VISIBLE);
             edit_tv.setVisibility(View.VISIBLE);
+            search_tv.setVisibility(View.VISIBLE);
             add_tv.setVisibility(View.VISIBLE);
             sign_out_tv.setAlpha(0.7f);
-            brightness_tv.setAlpha(0.7f);
             edit_tv.setAlpha(0.7f);
+            search_tv.setAlpha(0.7f);
             add_tv.setAlpha(0.7f);
         }
         else {
             sign_out_tv.setVisibility(View.INVISIBLE);
-            brightness_tv.setVisibility(View.INVISIBLE);
             edit_tv.setVisibility(View.INVISIBLE);
+            search_tv.setVisibility(View.INVISIBLE);
             add_tv.setVisibility(View.INVISIBLE);
         }
     }
@@ -236,14 +315,14 @@ public class CameraActivity extends AppCompatActivity {
     private void  setVisibilityFab (boolean clicked)  {
         if(!clicked){
             sign_out_fab.setVisibility(View.VISIBLE);
-            brightnessFab.setVisibility(View.VISIBLE);
             editFab.setVisibility(View.VISIBLE);
+            searchFab.setVisibility(View.VISIBLE);
             addFab.setVisibility(View.VISIBLE);
         }
         else {
             sign_out_fab.setVisibility(View.INVISIBLE);
-            brightnessFab.setVisibility(View.INVISIBLE);
             editFab.setVisibility(View.INVISIBLE);
+            searchFab.setVisibility(View.INVISIBLE);
             addFab.setVisibility(View.INVISIBLE);
         }
     }
@@ -251,15 +330,15 @@ public class CameraActivity extends AppCompatActivity {
     private void setAnimation(boolean clicked) {
         if(!clicked) {
             addFab.startAnimation(fromBottom);
+            searchFab.startAnimation(fromBottom);
             editFab.startAnimation(fromBottom);
-            brightnessFab.startAnimation(fromBottom);
             sign_out_fab.startAnimation(fromBottom);
             menuFab.startAnimation(rotateOpen);
         }
         else {
             addFab.startAnimation(toBottom);
+            searchFab.startAnimation(toBottom);
             editFab.startAnimation(toBottom);
-            brightnessFab.startAnimation(toBottom);
             sign_out_fab.startAnimation(toBottom);
             menuFab.startAnimation(rotateClose);
         }
@@ -268,14 +347,14 @@ public class CameraActivity extends AppCompatActivity {
     private void setClickableFab(boolean clicked) {
         if(!clicked){
             addFab.setClickable(true);
+            searchFab.setClickable(true);
             editFab.setClickable(true);
-            brightnessFab.setClickable(true);
             sign_out_fab.setClickable(true);
         }
         else {
             addFab.setClickable(false);
+            searchFab.setClickable(false);
             editFab.setClickable(false);
-            brightnessFab.setClickable(false);
             sign_out_fab.setClickable(false);
         }
     }
@@ -374,11 +453,11 @@ public class CameraActivity extends AppCompatActivity {
     }
 
     private void signOut() {
-                FirebaseAuth.getInstance().signOut();
-                Toast.makeText(CameraActivity.this, "Signed out successfully", Toast.LENGTH_LONG).show();
-                Intent intent = new Intent(CameraActivity.this, LoginActivity.class);
-                startActivity(intent);
-                finish();
+            FirebaseAuth.getInstance().signOut();
+            Toast.makeText(CameraActivity.this, "Signed out successfully", Toast.LENGTH_LONG).show();
+            Intent intent = new Intent(CameraActivity.this, LoginActivity.class);
+            startActivity(intent);
+            finish();
 
     }
 }

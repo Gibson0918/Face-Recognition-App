@@ -12,6 +12,9 @@
           <set>
             <option value="$PROJECT_DIR$" />
             <option value="$PROJECT_DIR$/app" />
+            <option value="$PROJECT_DIR$/glow-development-kit-v1.1.0" />
+            <option value="$PROJECT_DIR$/libuvccamera-v1.1.0" />
+            <option value="$PROJECT_DIR$/usbserial-v6.1.0" />
           </set>
         </option>
         <option name="resolveModulePerSourceSet" value="false" />

@@ -9,6 +9,7 @@ public class FaceRecognition {
     private final float [][] embedding;
 
 
+
     public FaceRecognition(String name, @Nullable float[][] embedding) {
         this.name = name;
         this.embedding = embedding;
@@ -21,6 +22,8 @@ public class FaceRecognition {
     public float[][] getEmbedding() {
         return embedding;
     }
+
+
 
 
 }

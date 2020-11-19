@@ -1,2 +1,5 @@
+include ':usbserial-v6.1.0'
+include ':libuvccamera-v1.1.0'
+include ':glow-development-kit-v1.1.0'
 include ':app'
 rootProject.name = "CameraXXX"
