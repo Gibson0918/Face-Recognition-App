@@ -2,32 +2,37 @@ package com.gibson.face_recognition_camera;
 
 import android.content.Context;
 import android.util.Base64;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ProgressBar;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.constraintlayout.widget.ConstraintLayout;
+import androidx.coordinatorlayout.widget.CoordinatorLayout;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
 import com.firebase.ui.firestore.FirestoreRecyclerAdapter;
-import com.firebase.ui.firestore.FirestoreRecyclerOptions;
+import com.firebase.ui.firestore.paging.FirestorePagingAdapter;
+import com.firebase.ui.firestore.paging.FirestorePagingOptions;
+import com.firebase.ui.firestore.paging.LoadingState;
 import com.google.android.material.card.MaterialCardView;
 import com.google.android.material.imageview.ShapeableImageView;
+import com.google.android.material.snackbar.Snackbar;
 
-public class FaceAdapter extends FirestoreRecyclerAdapter<Face, FaceAdapter.FaceHolder> {
+public class FaceAdapter extends FirestorePagingAdapter<Face, FaceAdapter.FaceHolder> {
 
-    /**
-     * Create a new RecyclerView adapter that listens to a Firestore Query.  See {@link
-     * FirestoreRecyclerOptions} for configuration options.
-     *
-     * @param options
-     */
+
 
     private Context context;
     private OnItemClickListener mListener;
+    private ProgressBar progressBar;
+    private ConstraintLayout constraintLayout;
+    private RecyclerView recyclerView;
 
     public interface OnItemClickListener {
         void onItemClick(String key);
@@ -35,9 +40,12 @@ public class FaceAdapter extends FirestoreRecyclerAdapter<Face, FaceAdapter.Face
 
     public void setOnItemClickListener(OnItemClickListener listener) { mListener = listener;}
 
-    public FaceAdapter(@NonNull FirestoreRecyclerOptions<Face> options, Context context) {
+    public FaceAdapter(@NonNull FirestorePagingOptions<Face> options, Context context, ProgressBar progressBar, ConstraintLayout constraintLayout, RecyclerView recyclerView) {
         super(options);
         this.context = context;
+        this.progressBar = progressBar;
+        this.constraintLayout = constraintLayout;
+        this.recyclerView = recyclerView;
     }
 
     @Override
@@ -51,6 +59,37 @@ public class FaceAdapter extends FirestoreRecyclerAdapter<Face, FaceAdapter.Face
         byte[] decodedBase64String = Base64.decode(model.getBase64(), Base64.DEFAULT);
         Glide.with(holder.shapeableImageView.getContext()).load(decodedBase64String).into(holder.shapeableImageView);
         holder.textView.setText(model.getName());
+    }
+
+    @Override
+    protected void onLoadingStateChanged(@NonNull LoadingState state){
+        super.onLoadingStateChanged(state);
+        switch (state) {
+            case LOADED:
+                Log.d("PAGING_LOG", "Total item loaded:" +getItemCount());
+                progressBar.setVisibility(View.INVISIBLE);
+                recyclerView.setVisibility(View.VISIBLE);
+                break;
+            case FINISHED:
+                Log.d("PAGING_LOG", "All item loaded");
+                progressBar.setVisibility(View.INVISIBLE);
+                recyclerView.setVisibility(View.VISIBLE);
+                break;
+            case ERROR:
+                Log.d("PAGING_LOG", "Error loading items");
+                progressBar.setVisibility(View.INVISIBLE);
+                Snackbar.make(constraintLayout, "Error loading items, Please try again!", Snackbar.LENGTH_LONG).show();
+                break;
+            case LOADING_MORE:
+                Log.d("PAGING_LOG", "Loading next page");
+                progressBar.setVisibility(View.INVISIBLE);
+                break;
+            case LOADING_INITIAL:
+                Log.d("PAGING_LOG", "Loading initial data");
+                progressBar.setVisibility(View.VISIBLE);
+                recyclerView.setVisibility(View.INVISIBLE);
+                break;
+        }
     }
 
     class FaceHolder extends RecyclerView.ViewHolder {
@@ -69,7 +108,8 @@ public class FaceAdapter extends FirestoreRecyclerAdapter<Face, FaceAdapter.Face
                 public void onClick(View v) {
                     if (listener != null ) {
                         int pos = getAdapterPosition();
-                        String key = getSnapshots().getSnapshot(pos).getId();
+                        String key = getItem(pos).getId();
+                        Log.d("key",key);
                         listener.onItemClick(key);
 
                     }

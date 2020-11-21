@@ -83,6 +83,7 @@ dependencies {
     //firestore
     implementation 'com.google.firebase:firebase-firestore:21.7.0'
     implementation 'com.firebaseui:firebase-ui-firestore:7.0.0'
+    implementation 'androidx.paging:paging-runtime:2.1.2'
 
     def camerax_version = '1.0.0-alpha06'
     implementation "androidx.camera:camera-core:${camerax_version}"
