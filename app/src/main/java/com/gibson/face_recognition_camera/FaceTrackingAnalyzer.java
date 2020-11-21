@@ -121,6 +121,7 @@ public class FaceTrackingAnalyzer extends CameraActivity implements ImageAnalysi
                             if(firebaseVisionFaces.size() == 1) {
                                 FirebaseVisionFace face = firebaseVisionFaces.get(0);
                                 Bitmap croppedFaceBitmap = getFaceBitmap(face);
+                                Bitmap originalFrame = fbImage.getBitmap();
                                 if(croppedFaceBitmap != null) {
                                     AlertDialog.Builder builder = new AlertDialog.Builder(context);
                                     LayoutInflater inflater = context.getLayoutInflater();
@@ -140,7 +141,7 @@ public class FaceTrackingAnalyzer extends CameraActivity implements ImageAnalysi
                                             }
                                             else {
                                                 ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-                                                fbImage.getBitmap().compress(Bitmap.CompressFormat.PNG, 100, byteArrayOutputStream);
+                                                originalFrame.compress(Bitmap.CompressFormat.PNG, 100, byteArrayOutputStream);
                                                 byte[] byteArray = byteArrayOutputStream .toByteArray();
                                                 String encoded = Base64.encodeToString(byteArray, Base64.DEFAULT);
                                                 faceRecognitionList = faceNet.addFaceToRecognitionList(name, encoded ,croppedFaceBitmap, faceRecognitionList, db, emailAddr);

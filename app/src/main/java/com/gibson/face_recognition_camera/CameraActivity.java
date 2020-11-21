@@ -17,36 +17,34 @@ import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
 import android.annotation.SuppressLint;
+import android.app.ActivityOptions;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.hardware.display.DisplayManager;
 import android.net.Uri;
 import android.os.Bundle;
-import android.os.Environment;
 import android.util.Size;
 import android.view.Display;
 import android.view.TextureView;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.Window;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.google.android.gms.tasks.OnCompleteListener;
-import com.google.android.gms.tasks.Task;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.snackbar.Snackbar;
+import com.google.android.material.transition.platform.MaterialContainerTransformSharedElementCallback;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
-import com.google.firebase.firestore.QuerySnapshot;
 import com.madgaze.smartglass.otg.sensor.SplitUSBSerial;
 
-import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -79,6 +77,9 @@ public class CameraActivity extends AppCompatActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        getWindow().requestFeature(Window.FEATURE_ACTIVITY_TRANSITIONS);
+        setExitSharedElementCallback(new MaterialContainerTransformSharedElementCallback());
+        getWindow().setSharedElementsUseOverlay(false);
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_camera);
         boolean isConnected = SplitUSBSerial.getInstance(this).isDeviceConnected();
@@ -119,58 +120,28 @@ public class CameraActivity extends AppCompatActivity {
                 }
             });
 
-            new Thread(new Runnable() {
-                @Override
-                public void run() {
-                    db = FirebaseFirestore.getInstance();
-                    db.collection(emailAddr).get().addOnCompleteListener(new OnCompleteListener<QuerySnapshot>() {
-                        @Override
-                        public void onComplete(@NonNull Task<QuerySnapshot> task) {
-                            if (task.isSuccessful()) {
-                                for (QueryDocumentSnapshot documentSnapshot : Objects.requireNonNull(task.getResult())) {
-                                    if(nameList.contains(documentSnapshot.get("Name").toString())){
-                                        continue;
-                                    }
-                                    else {
-                                        nameList.add(documentSnapshot.get("Name").toString());
-                                    }
-                                }
-                                nameList.sort(String::compareToIgnoreCase);
-                                nameList.add(0,"Show All");
-                            }
-                        }
-                    });
-                }
-            }).start();
+
 
         /*Populate the faceRecognitionList on startup from firestore
         running fireStore request on a new thread*/
-            new Thread(new Runnable() {
-                @Override
-                public void run() {
-                    db = FirebaseFirestore.getInstance();
-                    db.collection(emailAddr).get().addOnCompleteListener(new OnCompleteListener<QuerySnapshot>() {
-                        @Override
-                        public void onComplete(@NonNull Task<QuerySnapshot> task) {
-                            if (task.isSuccessful()) {
-                                for (QueryDocumentSnapshot documentSnapshot : Objects.requireNonNull(task.getResult())) {
-                                    float[][] faceEmbeddings = new float[1][192];
-                                    //List<Float> embeddings = (List<Float>) documentSnapshot.get("Embeddings");
-                                    List<Double> embeddings = (List<Double>) documentSnapshot.get("Embeddings");
-                                    for (int i = 0; i < 192; i++) {
-                                        assert embeddings != null;
-                                        faceEmbeddings[0][i] = embeddings.get(i).floatValue();
-                                    }
-                                    FaceRecognition face = new FaceRecognition(documentSnapshot.get("Name").toString(), faceEmbeddings);
-                                    faceRecognitionList.add(face);
-                                }
+            new Thread(() -> {
+                db = FirebaseFirestore.getInstance();
+                db.collection(emailAddr).get().addOnCompleteListener(task -> {
+                    if (task.isSuccessful()) {
+                        for (QueryDocumentSnapshot documentSnapshot : Objects.requireNonNull(task.getResult())) {
+                            float[][] faceEmbeddings = new float[1][192];
+                            //List<Float> embeddings = (List<Float>) documentSnapshot.get("Embeddings");
+                            List<Double> embeddings = (List<Double>) documentSnapshot.get("Embeddings");
+                            for (int i = 0; i < 192; i++) {
+                                assert embeddings != null;
+                                faceEmbeddings[0][i] = embeddings.get(i).floatValue();
                             }
+                            FaceRecognition face = new FaceRecognition(Objects.requireNonNull(documentSnapshot.get("Name")).toString(), faceEmbeddings);
+                            faceRecognitionList.add(face);
                         }
-                    });
-                }
+                    }
+                });
             }).start();
-
-
 
 
             // <<Load the facial recognition model  >>
@@ -188,43 +159,53 @@ public class CameraActivity extends AppCompatActivity {
                 ActivityCompat.requestPermissions(this, REQUIRED_PERMISSIONS, REQUEST_CODE_PERMISSIONS);
             }
 
-            searchFab.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    PackageManager pm = CameraActivity.this.getPackageManager();
-                    boolean isInstalled = isPackageInstalled("com.google.ar.lens", pm);
-                    if (isInstalled) {
-                        //Toast.makeText(CameraActivity.this, "Google lens already installed", Toast.LENGTH_SHORT).show();
-                        Intent launchGL = getPackageManager().getLaunchIntentForPackage("com.google.ar.lens");
-                        if (launchGL != null) {
-                            startActivity(launchGL);
-                        }
-                    } else {
-                        try {
-                            Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id=com.google.ar.lens"));
-                            startActivity(intent);
-                        } catch (Exception e) {
-                            e.printStackTrace();
-                        }
+            searchFab.setOnClickListener(v -> {
+                PackageManager pm = CameraActivity.this.getPackageManager();
+                boolean isInstalled = isPackageInstalled(pm);
+                if (isInstalled) {
+                    //Toast.makeText(CameraActivity.this, "Google lens already installed", Toast.LENGTH_SHORT).show();
+                    Intent launchGL = getPackageManager().getLaunchIntentForPackage("com.google.ar.lens");
+                    if (launchGL != null) {
+                        startActivity(launchGL);
+                    }
+                } else {
+                    try {
+                        Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id=com.google.ar.lens"));
+                        startActivity(intent);
+                    } catch (Exception e) {
+                        e.printStackTrace();
                     }
                 }
             });
 
-            editFab.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    Intent intent = new Intent(CameraActivity.this, EditActivity.class);
-                    intent.putStringArrayListExtra("nameList", (ArrayList<String>) nameList);
-                    startActivity(intent);
-                }
+            editFab.setOnClickListener(v -> {
+                Intent intent = new Intent(CameraActivity.this, EditActivity.class);
+                new Thread(() -> {
+                    db = FirebaseFirestore.getInstance();
+                    db.collection(emailAddr).get().addOnCompleteListener(task -> {
+                        if (task.isSuccessful()) {
+                            for (QueryDocumentSnapshot documentSnapshot : Objects.requireNonNull(task.getResult())) {
+                                if(nameList.contains(Objects.requireNonNull(documentSnapshot.get("Name")).toString())){
+                                    continue;
+                                }
+                                else {
+                                    nameList.add(Objects.requireNonNull(documentSnapshot.get("Name")).toString());
+                                }
+                            }
+                            nameList.remove("Show All");
+                            nameList.sort(String::compareToIgnoreCase);
+                            nameList.add(0,"Show All");
+
+                            //ActivityOptions options = ActivityOptions.makeSceneTransitionAnimation(CameraActivity.this, editFab, editFab.getTransitionName());
+
+                            intent.putStringArrayListExtra("nameList", (ArrayList<String>) nameList);
+                            startActivity(intent);
+                        }
+                    });
+                }).start();
             });
 
-            sign_out_fab.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View view) {
-                    signOut();
-                }
-            });
+            sign_out_fab.setOnClickListener(view -> signOut());
         }
     }
 
@@ -257,6 +238,7 @@ public class CameraActivity extends AppCompatActivity {
         faceRecognitionList = new ArrayList<>();
         mAuth = FirebaseAuth.getInstance();
         currentUser = mAuth.getCurrentUser();
+        assert currentUser != null;
         emailAddr = currentUser.getEmail();
         menuFab = findViewById(R.id.menu_fab);
         sign_out_fab = findViewById(R.id.sign_out_fab);
@@ -402,15 +384,15 @@ public class CameraActivity extends AppCompatActivity {
     }
 
     //not required unless you want to save the bitmap to external storage
-    public String getBatchDirectoryName() {
-        String app_folder_path = "";
-        app_folder_path = Environment.getExternalStorageDirectory().toString() + "/images";
-        File dir = new File(app_folder_path);
-        if (!dir.exists() && !dir.mkdirs()) {
-            //do something here
-        }
-        return app_folder_path;
-    }
+//    public String getBatchDirectoryName() {
+////        String app_folder_path = "";
+////        app_folder_path = Environment.getExternalStorageDirectory().toString() + "/images";
+////        File dir = new File(app_folder_path);
+////        if (!dir.exists() && !dir.mkdirs()) {
+////            //do something here
+////        }
+////        return app_folder_path;
+////    }
 
     private boolean allPermissionsGranted(){
         for(String permission : REQUIRED_PERMISSIONS){
@@ -435,9 +417,9 @@ public class CameraActivity extends AppCompatActivity {
     }
 
     //check if an app required is already installed
-    private boolean isPackageInstalled(String packageName, PackageManager packageManager) {
+    private boolean isPackageInstalled(PackageManager packageManager) {
         try {
-            packageManager.getPackageInfo(packageName,0);
+            packageManager.getPackageInfo("com.google.ar.lens",0);
             return true;
         } catch (PackageManager.NameNotFoundException e) {
             e.printStackTrace();

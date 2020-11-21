@@ -96,7 +96,8 @@
         app:backgroundTint="#FFC0CB"
         app:srcCompat="@drawable/white_brightness_setting_logo"
         android:layout_gravity="end"
-        app:layout_anchor="@id/sign_out_fab"/>
+        app:layout_anchor="@id/sign_out_fab"
+        android:transitionName="shared_element_container"/>
 
     <TextView
         android:id="@+id/addTextView"
