@@ -1,20 +1,14 @@
 package com.gibson.face_recognition_camera;
 
-import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.constraintlayout.widget.ConstraintLayout;
-import androidx.coordinatorlayout.widget.CoordinatorLayout;
-import androidx.interpolator.view.animation.FastOutSlowInInterpolator;
 import androidx.paging.PagedList;
-import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import android.content.Intent;
-import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
-import android.view.Window;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.ProgressBar;
@@ -22,27 +16,17 @@ import android.widget.Spinner;
 
 import com.firebase.ui.firestore.FirestoreRecyclerOptions;
 import com.firebase.ui.firestore.paging.FirestorePagingOptions;
-import com.google.android.gms.tasks.OnCompleteListener;
-import com.google.android.gms.tasks.Task;
-import com.google.android.material.color.MaterialColors;
-import com.google.android.material.transition.platform.MaterialArcMotion;
-import com.google.android.material.transition.platform.MaterialContainerTransform;
-import com.google.android.material.transition.platform.MaterialContainerTransformSharedElementCallback;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.CollectionReference;
-import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.Query;
-import com.google.firebase.firestore.QueryDocumentSnapshot;
-import com.google.firebase.firestore.QuerySnapshot;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 
 
-public class EditActivity extends AppCompatActivity implements AdapterView.OnItemSelectedListener {
+public class AlbumActivity extends AppCompatActivity implements AdapterView.OnItemSelectedListener {
 
     private FirebaseFirestore db = FirebaseFirestore.getInstance();
     private CollectionReference dbRef;
@@ -62,6 +46,7 @@ public class EditActivity extends AppCompatActivity implements AdapterView.OnIte
 //        getWindow().requestFeature(Window.FEATURE_ACTIVITY_TRANSITIONS);
 //        findViewById(android.R.id.content).setTransitionName("shared_element_container");
 //        setExitSharedElementCallback(new MaterialContainerTransformSharedElementCallback());
+//        getWindow().setSharedElementsUseOverlay(false);
 //        MaterialContainerTransform transform = new MaterialContainerTransform();
 //        transform.addTarget(android.R.id.content);
 //        //transform.setAllContainerColors(MaterialColors.getColor(findViewById(android.R.id.content), R.attr.colorSurface));
@@ -89,12 +74,11 @@ public class EditActivity extends AppCompatActivity implements AdapterView.OnIte
 
         nameList = getIntent().getStringArrayListExtra("nameList");
         spinner = findViewById(R.id.spinner);
-        adapter = new ArrayAdapter(EditActivity.this, R.layout.custom_spinner, nameList);
+        adapter = new ArrayAdapter(AlbumActivity.this, R.layout.custom_spinner, nameList);
         adapter.notifyDataSetChanged();
         adapter.setDropDownViewResource(R.layout.custom_spinner_dropdown);
         spinner.setAdapter(adapter);
-        spinner.setOnItemSelectedListener(EditActivity.this);
-
+        spinner.setOnItemSelectedListener(AlbumActivity.this);
 
         Query query = dbRef.orderBy("Name", Query.Direction.DESCENDING);
 
@@ -116,7 +100,7 @@ public class EditActivity extends AppCompatActivity implements AdapterView.OnIte
         faceAdapter.setOnItemClickListener(new FaceAdapter.OnItemClickListener() {
             @Override
             public void onItemClick(String key) {
-                Intent intent = new Intent(EditActivity.this, DetailsActivity.class);
+                Intent intent = new Intent(AlbumActivity.this, DetailsActivity.class);
                 intent.putExtra("key", key);
                 intent.putExtra("emailAddr", emailAddr);
                 startActivity(intent);
@@ -139,6 +123,7 @@ public class EditActivity extends AppCompatActivity implements AdapterView.OnIte
     @Override
     public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
         String choice = parent.getItemAtPosition(position).toString();
+        //((TextView) parent.getChildAt(position)).setTextColor(Color.RED);
         Log.d("choice",choice);
 
         if(choice.equals("Show All")) {

@@ -129,22 +129,25 @@ public class FaceTrackingAnalyzer extends CameraActivity implements ImageAnalysi
                                     ImageView ivFace = dialogLayout.findViewById(R.id.dlg_image);
                                     TextView tvTitle = dialogLayout.findViewById(R.id.dlg_title);
                                     EditText etName = dialogLayout.findViewById(R.id.dlg_input);
+                                    EditText relationShipTxt = dialogLayout.findViewById(R.id.dlg_relationship_input);
                                     tvTitle.setText("Add Face");
                                     ivFace.setImageBitmap(croppedFaceBitmap);
                                     etName.setHint("Input Name");
+                                    relationShipTxt.setHint("Input Relationship");
                                     builder.setPositiveButton("OK", new DialogInterface.OnClickListener() {
                                         @Override
                                         public void onClick(DialogInterface dialogInterface, int i) {
                                             String name = etName.getText().toString();
-                                            if (name.isEmpty()) {
-                                                Toast.makeText(context, "Please enter name", Toast.LENGTH_SHORT).show();
+                                            String relationship = relationShipTxt.getText().toString();
+                                            if (name.isEmpty() || relationship.isEmpty()) {
+                                                Toast.makeText(context, "Please fill in all details", Toast.LENGTH_SHORT).show();
                                             }
                                             else {
                                                 ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
                                                 originalFrame.compress(Bitmap.CompressFormat.PNG, 100, byteArrayOutputStream);
                                                 byte[] byteArray = byteArrayOutputStream .toByteArray();
                                                 String encoded = Base64.encodeToString(byteArray, Base64.DEFAULT);
-                                                faceRecognitionList = faceNet.addFaceToRecognitionList(name, encoded ,croppedFaceBitmap, faceRecognitionList, db, emailAddr);
+                                                faceRecognitionList = faceNet.addFaceToRecognitionList(name, encoded ,croppedFaceBitmap, faceRecognitionList, db, emailAddr, relationship);
                                                 dialogInterface.dismiss();
 
                                             }

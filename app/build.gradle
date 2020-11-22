@@ -111,4 +111,7 @@ dependencies {
 
     //lottie animation for splash screen
     implementation 'com.airbnb.android:lottie:3.4.4'
+
+    //glide transformation
+    implementation 'jp.wasabeef:glide-transformations:4.3.0'
 }

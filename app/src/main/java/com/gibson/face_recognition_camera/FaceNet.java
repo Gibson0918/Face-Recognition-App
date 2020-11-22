@@ -136,7 +136,7 @@ public class FaceNet {
     @RequiresApi(api = Build.VERSION_CODES.N)
     public Future<FaceRecognition> recognizeFace(Bitmap bitmap, List<FaceRecognition> faceRecognitionList) {
         CompletableFuture<FaceRecognition> completableFuture = new CompletableFuture<>();
-        FaceRecognition recognizedFace = new FaceRecognition("unknown",null);
+        FaceRecognition recognizedFace = new FaceRecognition("unknown",null, "null");
         double smallestDist = Double.MAX_VALUE;
         float[][] unknownfaceEmbeddings = run(bitmap);
         for (FaceRecognition face : faceRecognitionList) {
@@ -155,7 +155,7 @@ public class FaceNet {
             }
         }
         if(smallestDist >=1.0f){
-            recognizedFace = new FaceRecognition("unknown",null);
+            recognizedFace = new FaceRecognition("unknown",null,"null");
         }
         //Log.d("face",recognizedFace.getName());
         //Log.d("face",  "dist: "+ smallestDist);
@@ -164,9 +164,9 @@ public class FaceNet {
     }
 
 
-    public List<FaceRecognition> addFaceToRecognitionList(String name, String encodedBase64 ,Bitmap bitmap, List<FaceRecognition> faceRecognitionList, FirebaseFirestore db, String emailAddr){
+    public List<FaceRecognition> addFaceToRecognitionList(String name, String encodedBase64 ,Bitmap bitmap, List<FaceRecognition> faceRecognitionList, FirebaseFirestore db, String emailAddr, String relationship){
         float[][] faceEmbeddings = run(bitmap);
-        FaceRecognition face = new FaceRecognition(name, faceEmbeddings);
+        FaceRecognition face = new FaceRecognition(name, faceEmbeddings, relationship);
         faceRecognitionList.add(face);
 
         Map<String, Object> faces = new HashMap<>();
@@ -179,6 +179,7 @@ public class FaceNet {
         faces.put("Embeddings",embeddingsList);
         faces.put("TimeStamp", FieldValue.serverTimestamp());
         faces.put("Base64", encodedBase64);
+        faces.put("Relationship", relationship);
         db.collection(emailAddr).add(faces).addOnSuccessListener(new OnSuccessListener<DocumentReference>() {
             @Override
             public void onSuccess(DocumentReference documentReference) {

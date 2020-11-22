@@ -1,15 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
-<TextView
-    xmlns:android="http://schemas.android.com/apk/res/android"
+<TextView xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@android:id/text1"
     style="?attr/spinnerDropDownItemStyle"
-    android:singleLine="true"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:padding="10sp"
+    android:background="#5E5E5E"
+    android:backgroundTint="@android:color/white"
     android:ellipsize="marquee"
-    android:textColor="@android:color/white"
-    android:background="@android:color/darker_gray"
-    android:backgroundTint="@android:color/holo_blue_bright"
+    android:padding="10sp"
+    android:singleLine="true"
     android:textAlignment="center"
-    android:textSize="24sp"/>
+    android:textColor="@android:color/black"
+    android:textSize="24sp" />

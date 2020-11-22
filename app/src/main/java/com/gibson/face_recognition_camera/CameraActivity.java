@@ -17,13 +17,13 @@ import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
 import android.annotation.SuppressLint;
-import android.app.ActivityOptions;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.hardware.display.DisplayManager;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Handler;
 import android.util.Size;
 import android.view.Display;
 import android.view.TextureView;
@@ -136,7 +136,7 @@ public class CameraActivity extends AppCompatActivity {
                                 assert embeddings != null;
                                 faceEmbeddings[0][i] = embeddings.get(i).floatValue();
                             }
-                            FaceRecognition face = new FaceRecognition(Objects.requireNonNull(documentSnapshot.get("Name")).toString(), faceEmbeddings);
+                            FaceRecognition face = new FaceRecognition(Objects.requireNonNull(documentSnapshot.get("Name")).toString(), faceEmbeddings,  Objects.requireNonNull(documentSnapshot.get("Relationship")).toString());
                             faceRecognitionList.add(face);
                         }
                     }
@@ -179,7 +179,8 @@ public class CameraActivity extends AppCompatActivity {
             });
 
             editFab.setOnClickListener(v -> {
-                Intent intent = new Intent(CameraActivity.this, EditActivity.class);
+                Snackbar.make(findViewById(R.id.coordinatorLayout), "Retrieving data, please hold on!", Snackbar.LENGTH_LONG).show();
+                Intent intent = new Intent(CameraActivity.this, AlbumActivity.class);
                 new Thread(() -> {
                     db = FirebaseFirestore.getInstance();
                     db.collection(emailAddr).get().addOnCompleteListener(task -> {
@@ -197,7 +198,6 @@ public class CameraActivity extends AppCompatActivity {
                             nameList.add(0,"Show All");
 
                             //ActivityOptions options = ActivityOptions.makeSceneTransitionAnimation(CameraActivity.this, editFab, editFab.getTransitionName());
-
                             intent.putStringArrayListExtra("nameList", (ArrayList<String>) nameList);
                             startActivity(intent);
                         }

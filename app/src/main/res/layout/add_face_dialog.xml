@@ -2,7 +2,7 @@
 <androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
-    android:id="@+id/constraintLayout"
+    android:id="@+id/detailConstraintLayout"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
@@ -55,4 +55,25 @@
         app:layout_constraintTop_toBottomOf="@+id/dlg_image"
         tools:layout_conversion_absoluteHeight="45dp"
         tools:layout_conversion_absoluteWidth="200dp" />
+
+    <EditText
+        android:id="@+id/dlg_relationship_input"
+        android:layout_width="250sp"
+        android:layout_height="35sp"
+        android:layout_marginTop="20dp"
+        android:background="@drawable/custom_text_input"
+        android:drawableStart="@drawable/purple_person_icon"
+        android:drawablePadding="6sp"
+        android:hint="Relationship"
+        android:inputType="textPersonName"
+
+        android:paddingStart="12dp"
+        android:paddingEnd="12dp"
+        app:layout_constraintEnd_toEndOf="@+id/dlg_input"
+        app:layout_constraintHorizontal_bias="0.0"
+        app:layout_constraintStart_toStartOf="@+id/dlg_input"
+        app:layout_constraintTop_toBottomOf="@+id/dlg_input"
+        tools:layout_conversion_absoluteHeight="45dp"
+        tools:layout_conversion_absoluteWidth="200dp" />
+
 </androidx.constraintlayout.widget.ConstraintLayout>

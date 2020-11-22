@@ -11,13 +11,14 @@ public class Face {
     private List<Float> Embeddings;
     private String Base64;
     private Timestamp TimeStamp;
+    private String Relationship;
 
-
-    public Face(String Name, List<Float> Embeddings, String Base64, Timestamp TimeStamp) {
+    public Face(String Name, List<Float> Embeddings, String Base64, Timestamp TimeStamp, String Relationship) {
         this.Name = Name;
         this.Embeddings = Embeddings;
         this.Base64 = Base64;
         this.TimeStamp = TimeStamp;
+        this.Relationship = Relationship;
     }
 
     public Face() {
@@ -39,4 +40,6 @@ public class Face {
     public Timestamp getTimeStamp() {
         return TimeStamp;
     }
+
+    public String getRelationship() {return Relationship;}
 }
