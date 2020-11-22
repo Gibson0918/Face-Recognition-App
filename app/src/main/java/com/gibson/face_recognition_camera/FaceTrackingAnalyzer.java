@@ -18,6 +18,7 @@ import android.util.Base64;
 import android.view.LayoutInflater;
 import android.view.TextureView;
 import android.view.View;
+import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.RadioButton;
@@ -33,7 +34,9 @@ import androidx.camera.core.ImageProxy;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.Task;
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
+import com.google.android.material.snackbar.Snackbar;
 import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
@@ -123,7 +126,6 @@ public class FaceTrackingAnalyzer extends CameraActivity implements ImageAnalysi
                                 Bitmap croppedFaceBitmap = getFaceBitmap(face);
                                 Bitmap originalFrame = fbImage.getBitmap();
                                 if(croppedFaceBitmap != null) {
-                                    AlertDialog.Builder builder = new AlertDialog.Builder(context);
                                     LayoutInflater inflater = context.getLayoutInflater();
                                     View dialogLayout = inflater.inflate(R.layout.add_face_dialog, null);
                                     ImageView ivFace = dialogLayout.findViewById(R.id.dlg_image);
@@ -134,26 +136,31 @@ public class FaceTrackingAnalyzer extends CameraActivity implements ImageAnalysi
                                     ivFace.setImageBitmap(croppedFaceBitmap);
                                     etName.setHint("Input Name");
                                     relationShipTxt.setHint("Input Relationship");
-                                    builder.setPositiveButton("OK", new DialogInterface.OnClickListener() {
+                                    AlertDialog builder = new AlertDialog.Builder(context).setView(dialogLayout).setPositiveButton("Ok", null).create();
+                                    builder.setOnShowListener(new DialogInterface.OnShowListener() {
                                         @Override
-                                        public void onClick(DialogInterface dialogInterface, int i) {
-                                            String name = etName.getText().toString();
-                                            String relationship = relationShipTxt.getText().toString();
-                                            if (name.isEmpty() || relationship.isEmpty()) {
-                                                Toast.makeText(context, "Please fill in all details", Toast.LENGTH_SHORT).show();
-                                            }
-                                            else {
-                                                ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-                                                originalFrame.compress(Bitmap.CompressFormat.PNG, 100, byteArrayOutputStream);
-                                                byte[] byteArray = byteArrayOutputStream .toByteArray();
-                                                String encoded = Base64.encodeToString(byteArray, Base64.DEFAULT);
-                                                faceRecognitionList = faceNet.addFaceToRecognitionList(name, encoded ,croppedFaceBitmap, faceRecognitionList, db, emailAddr, relationship);
-                                                dialogInterface.dismiss();
-
-                                            }
+                                        public void onShow(DialogInterface dialog) {
+                                            Button button = ((AlertDialog) dialog).getButton(AlertDialog.BUTTON_POSITIVE);
+                                            button.setOnClickListener(new View.OnClickListener() {
+                                                @Override
+                                                public void onClick(View v) {
+                                                    String name = etName.getText().toString();
+                                                    String relationship = relationShipTxt.getText().toString();
+                                                    if (name.isEmpty() || relationship.isEmpty() ) {
+                                                        Snackbar.make(v,"Please fill in all details!", Snackbar.LENGTH_SHORT).show();
+                                                    }
+                                                    else {
+                                                        ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+                                                        originalFrame.compress(Bitmap.CompressFormat.PNG, 100, byteArrayOutputStream);
+                                                        byte[] byteArray = byteArrayOutputStream .toByteArray();
+                                                        String encoded = Base64.encodeToString(byteArray, Base64.DEFAULT);
+                                                        faceRecognitionList = faceNet.addFaceToRecognitionList(name, encoded ,croppedFaceBitmap, faceRecognitionList, db, emailAddr, relationship);
+                                                        dialog.dismiss();
+                                                    }
+                                                }
+                                            });
                                         }
                                     });
-                                    builder.setView(dialogLayout);
                                     builder.show();
                                 }
                                 else {
@@ -174,7 +181,7 @@ public class FaceTrackingAnalyzer extends CameraActivity implements ImageAnalysi
         }).addOnFailureListener(new OnFailureListener() {
             @Override
             public void onFailure(@NonNull Exception e) {
-
+                // not required to display anything here
             }
         }).addOnCompleteListener(task -> imageProxy.close());
     }
@@ -254,7 +261,7 @@ public class FaceTrackingAnalyzer extends CameraActivity implements ImageAnalysi
                 return;
             }
             else {
-                if(count <=3){
+                if(count <=4){
                     Future<FaceRecognition> faceRecognitionFutureTask = faceNet.recognizeFace(croppedFaceBitmap, faceRecognitionList);
                     FaceRecognition recognizeFace = faceRecognitionFutureTask.get();
                     textPaint.getTextBounds(recognizeFace.getName(),0,recognizeFace.getName().length(),bounds);
