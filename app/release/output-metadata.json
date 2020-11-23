@@ -4,7 +4,7 @@
     "type": "APK",
     "kind": "Directory"
   },
-  "applicationId": "com.example.cameraxxx",
+  "applicationId": "com.gibson.face_recognition_camera",
   "variantName": "release",
   "elements": [
     {
