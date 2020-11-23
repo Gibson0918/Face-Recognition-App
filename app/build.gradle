@@ -4,10 +4,10 @@ apply plugin: 'com.google.gms.google-services'
 android {
     signingConfigs {
         Production {
-            storeFile file('C:\\Users\\Gibson\\Documents\\GitHub\\CameraX_App\\Keystore.jks')
-            storePassword 'Democracy'
-            keyAlias 'CameraX_App'
-            keyPassword 'Democracy'
+            storeFile file('C:\\Users\\Gibson\\Documents\\GitHub\\CameraX_App\\Gibson_keystore_file.jks')
+            keyAlias 'Gibson_keystore'
+            keyPassword 'yppsosmall'
+            storePassword 'yppsosmall'
         }
     }
     compileSdkVersion 30

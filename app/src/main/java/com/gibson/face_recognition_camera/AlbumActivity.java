@@ -36,7 +36,7 @@ public class AlbumActivity extends AppCompatActivity implements AdapterView.OnIt
     private FaceAdapter faceAdapter;
     private List<String> nameList = new ArrayList<>();
     private Spinner spinner;
-    private ArrayAdapter<String> adapter;
+    private ArrayAdapter adapter;
     private Query query;
     private ProgressBar progressBar;
     private ConstraintLayout constraintLayout;

@@ -19,3 +19,7 @@
 # If you keep the line number information, uncomment this to
 # hide the original source file name.
 #-renamesourcefileattribute SourceFile
+
+# Keep custom model classes
+-keep class com.gibson.face_recognition_camera.Face { *; }
+-keep class com.gibson.face_recognition_camera.FaceRecognition {*;}

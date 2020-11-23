@@ -15,6 +15,14 @@
       },
       "oauth_client": [
         {
+          "client_id": "712637543347-joniurbk0dtlb2kev5ksrdrp9q160k3j.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.gibson.face_recognition_camera",
+            "certificate_hash": "3940e23440f075071e371f96c66ca53e25cd3f03"
+          }
+        },
+        {
           "client_id": "712637543347-ju3457hbmj5fo7mvmj98tj3901hdnscb.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {

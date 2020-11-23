@@ -1,17 +1,25 @@
 package com.gibson.face_recognition_camera;
 
 import com.google.firebase.Timestamp;
+import com.google.firebase.firestore.PropertyName;
 
 import java.util.List;
 
 //This class is simply used to retrieve details from Firestore
 public class Face {
 
-    private String Name;
-    private List<Float> Embeddings;
+    @PropertyName("Base64")
     private String Base64;
-    private Timestamp TimeStamp;
+    @PropertyName("Embeddings")
+    private List<Float> Embeddings;
+    @PropertyName("Name")
+    private String Name;
+    @PropertyName("Relationship")
     private String Relationship;
+    @PropertyName("TimeStamp")
+    private Timestamp TimeStamp;
+
+    public Face() {}
 
     public Face(String Name, List<Float> Embeddings, String Base64, Timestamp TimeStamp, String Relationship) {
         this.Name = Name;
@@ -21,25 +29,26 @@ public class Face {
         this.Relationship = Relationship;
     }
 
-    public Face() {
-
-    }
-
-    public String getName() {
-        return Name;
-    }
-
-    public List<Float> getEmbeddings() {
-        return Embeddings;
-    }
-
+    @PropertyName("Base64")
     public String getBase64() {
         return Base64;
     }
 
+    @PropertyName("Embeddings")
+    public List<Float> getEmbeddings() {
+        return Embeddings;
+    }
+
+    @PropertyName("Name")
+    public String getName() {
+        return Name;
+    }
+
+    @PropertyName("Relationship")
+    public String getRelationship() {return Relationship;}
+
+    @PropertyName("TimeStamp")
     public Timestamp getTimeStamp() {
         return TimeStamp;
     }
-
-    public String getRelationship() {return Relationship;}
 }
