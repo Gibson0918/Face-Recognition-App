@@ -66,12 +66,10 @@ public class AlbumActivity extends AppCompatActivity implements AdapterView.OnIt
         dbRef = db.collection(emailAddr);
         progressBar = findViewById(R.id.progressBar);
         constraintLayout = findViewById(R.id.AlbumConstraintLayout);
-
         setupRecyclerView(progressBar, constraintLayout);
     }
 
     public void setupRecyclerView(ProgressBar progressBar, ConstraintLayout constraintLayout) {
-
         nameList = getIntent().getStringArrayListExtra("nameList");
         spinner = findViewById(R.id.spinner);
         adapter = new ArrayAdapter(AlbumActivity.this, R.layout.custom_spinner, nameList);
@@ -95,6 +93,7 @@ public class AlbumActivity extends AppCompatActivity implements AdapterView.OnIt
         faceAdapter = new FaceAdapter(options, this, progressBar, constraintLayout, recyclerView);
         recyclerView.setHasFixedSize(true);
         // already set layoutmanager in the xml file
+        adapter.notifyDataSetChanged();
         recyclerView.setAdapter(faceAdapter);
 
         faceAdapter.setOnItemClickListener(new FaceAdapter.OnItemClickListener() {
@@ -158,6 +157,5 @@ public class AlbumActivity extends AppCompatActivity implements AdapterView.OnIt
 
     @Override
     public void onNothingSelected(AdapterView<?> parent) {
-
     }
 }

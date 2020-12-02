@@ -52,6 +52,9 @@ import java.io.ByteArrayOutputStream;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
+import java.util.concurrent.RunnableFuture;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 
 public class FaceTrackingAnalyzer extends CameraActivity implements ImageAnalysis.Analyzer {
@@ -91,8 +94,10 @@ public class FaceTrackingAnalyzer extends CameraActivity implements ImageAnalysi
         if (image == null || image.getImage() == null) {
             return;
         }
+
         int rotation = degreesToFirebaseRotation(rotationDegrees);
         fbImage = FirebaseVisionImage.fromMediaImage(image.getImage(), rotation);
+
         initDrawingUtils();
         initDetector(image);
     }
@@ -109,74 +114,92 @@ public class FaceTrackingAnalyzer extends CameraActivity implements ImageAnalysi
         //retrieve a list of faces detected (firebaseVisionFaces) and perform facial recognition
         faceDetector.detectInImage(fbImage).addOnSuccessListener(firebaseVisionFaces -> {
             if (!firebaseVisionFaces.isEmpty()) {
-                try {
                     //comparing face embeddings here
-                    processFaces(firebaseVisionFaces);
-                } catch (ExecutionException e) {
-                    e.printStackTrace();
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-                    addFab.setOnClickListener(new View.OnClickListener() {
-                        @Override
-                        public void onClick(View view) {
-                            //only allow faces to be added when there is only 1  face in the frame
-                            if(firebaseVisionFaces.size() == 1) {
-                                FirebaseVisionFace face = firebaseVisionFaces.get(0);
-                                Bitmap croppedFaceBitmap = getFaceBitmap(face);
-                                Bitmap originalFrame = fbImage.getBitmap();
-                                if(croppedFaceBitmap != null) {
-                                    LayoutInflater inflater = context.getLayoutInflater();
-                                    View dialogLayout = inflater.inflate(R.layout.add_face_dialog, null);
-                                    ImageView ivFace = dialogLayout.findViewById(R.id.dlg_image);
-                                    TextView tvTitle = dialogLayout.findViewById(R.id.dlg_title);
-                                    EditText etName = dialogLayout.findViewById(R.id.dlg_input);
-                                    EditText relationShipTxt = dialogLayout.findViewById(R.id.dlg_relationship_input);
-                                    tvTitle.setText("Add Face");
-                                    ivFace.setImageBitmap(croppedFaceBitmap);
-                                    etName.setHint("Input Name");
-                                    relationShipTxt.setHint("Input Relationship");
-                                    AlertDialog builder = new AlertDialog.Builder(context).setView(dialogLayout).setPositiveButton("Ok", null).create();
-                                    builder.setOnShowListener(new DialogInterface.OnShowListener() {
-                                        @Override
-                                        public void onShow(DialogInterface dialog) {
-                                            Button button = ((AlertDialog) dialog).getButton(AlertDialog.BUTTON_POSITIVE);
-                                            button.setOnClickListener(new View.OnClickListener() {
-                                                @Override
-                                                public void onClick(View v) {
-                                                    String name = etName.getText().toString();
-                                                    String relationship = relationShipTxt.getText().toString();
-                                                    if (name.isEmpty() || relationship.isEmpty() ) {
-                                                        Snackbar.make(v,"Please fill in all details!", Snackbar.LENGTH_SHORT).show();
-                                                    }
-                                                    else {
-                                                        ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-                                                        originalFrame.compress(Bitmap.CompressFormat.PNG, 100, byteArrayOutputStream);
-                                                        byte[] byteArray = byteArrayOutputStream .toByteArray();
-                                                        String encoded = Base64.encodeToString(byteArray, Base64.DEFAULT);
-                                                        faceRecognitionList = faceNet.addFaceToRecognitionList(name, encoded ,croppedFaceBitmap, faceRecognitionList, db, emailAddr, relationship);
-                                                        dialog.dismiss();
-                                                    }
+                    new Thread(()->{
+                        try {
+                            processFaces(firebaseVisionFaces);
+                            runOnUiThread(new Runnable() {
+                                @Override
+                                public void run() {
+                                    imageView.setImageBitmap(abitmap);
+                                }
+                            });
+                        } catch (ExecutionException e) {
+                            e.printStackTrace();
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }
+                    }).start();
+                    //processFaces(firebaseVisionFaces);
+                /*runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        imageView.setImageBitmap(abitmap);
+                    }
+                });*/
+                   // imageView.setImageBitmap(abitmap);
+
+
+                addFab.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View view) {
+                        //only allow faces to be added when there is only 1  face in the frame
+                        if(firebaseVisionFaces.size() == 1) {
+                            FirebaseVisionFace face = firebaseVisionFaces.get(0);
+                            Bitmap croppedFaceBitmap = getFaceBitmap(face);
+                            Bitmap originalFrame = fbImage.getBitmap();
+                            if(croppedFaceBitmap != null) {
+                                LayoutInflater inflater = context.getLayoutInflater();
+                                View dialogLayout = inflater.inflate(R.layout.add_face_dialog, null);
+                                ImageView ivFace = dialogLayout.findViewById(R.id.dlg_image);
+                                TextView tvTitle = dialogLayout.findViewById(R.id.dlg_title);
+                                EditText etName = dialogLayout.findViewById(R.id.dlg_input);
+                                EditText relationShipTxt = dialogLayout.findViewById(R.id.dlg_relationship_input);
+                                tvTitle.setText("Add Face");
+                                ivFace.setImageBitmap(croppedFaceBitmap);
+                                etName.setHint("Input Name");
+                                relationShipTxt.setHint("Input Relationship");
+                                AlertDialog builder = new AlertDialog.Builder(context).setView(dialogLayout).setPositiveButton("Ok", null).create();
+                                builder.setOnShowListener(new DialogInterface.OnShowListener() {
+                                    @Override
+                                    public void onShow(DialogInterface dialog) {
+                                        Button button = ((AlertDialog) dialog).getButton(AlertDialog.BUTTON_POSITIVE);
+                                        button.setOnClickListener(new View.OnClickListener() {
+                                            @Override
+                                            public void onClick(View v) {
+                                                String name = etName.getText().toString();
+                                                String relationship = relationShipTxt.getText().toString();
+                                                if (name.isEmpty() || relationship.isEmpty() ) {
+                                                    Snackbar.make(v,"Please fill in all details!", Snackbar.LENGTH_SHORT).show();
                                                 }
-                                            });
-                                        }
-                                    });
-                                    builder.show();
-                                }
-                                else {
-                                    Toast.makeText(context,"Please try again, error capturing face image!", Toast.LENGTH_LONG).show();
-                                }
+                                                else {
+                                                    ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+                                                    originalFrame.compress(Bitmap.CompressFormat.PNG, 100, byteArrayOutputStream);
+                                                    byte[] byteArray = byteArrayOutputStream .toByteArray();
+                                                    String encoded = Base64.encodeToString(byteArray, Base64.DEFAULT);
+                                                    faceRecognitionList = faceNet.addFaceToRecognitionList(name, encoded ,croppedFaceBitmap, faceRecognitionList, db, emailAddr, relationship, context);
+                                                    dialog.dismiss();
+                                                }
+                                            }
+                                        });
+                                    }
+                                });
+                                builder.show();
                             }
                             else {
-                                Toast.makeText(context,"Please ensure that only 1 face is shown!", Toast.LENGTH_LONG).show();
+                                Toast.makeText(context,"Please try again, error capturing face image!", Toast.LENGTH_LONG).show();
                             }
                         }
-                    });
+                        else {
+                            Toast.makeText(context,"Please ensure that only 1 face is shown!", Toast.LENGTH_LONG).show();
+                        }
+                    }
+                });
             }
             else {
                 //clear the canvas/drawings of rect boxes when there are no faces detected
                 canvas.drawColor(Color.TRANSPARENT, PorterDuff.Mode.MULTIPLY);
-                imageView.setImageBitmap(abitmap);
+                //imageView.setImageBitmap(abitmap);
             }
         }).addOnFailureListener(new OnFailureListener() {
             @Override
@@ -217,48 +240,13 @@ public class FaceTrackingAnalyzer extends CameraActivity implements ImageAnalysi
     }
 
     @RequiresApi(api = Build.VERSION_CODES.N)
-    private synchronized void processFaces(List<FirebaseVisionFace> faces) throws ExecutionException, InterruptedException {
-        //I  have set facial recognition to be performed only when there are less than 3 faces in the frame
-        /*if(faces.size() <= 4 ) {
-            for (FirebaseVisionFace face : faces) {
-                // get a cropped bitmap of each face
-                Bitmap croppedFaceBitmap = getFaceBitmap(face);
-                if (croppedFaceBitmap == null) {
-                    return;
-                } else {
-                        Future<FaceRecognition> faceRecognitionFutureTask = faceNet.recognizeFace(croppedFaceBitmap, faceRecognitionList);
-                        FaceRecognition recognizeFace = faceRecognitionFutureTask.get();
-                        textPaint.getTextBounds(recognizeFace.getName(),0,recognizeFace.getName().length(),bounds);
-                        canvas.drawRect((int) translateX(face.getBoundingBox().left),
-                                (int) translateY(face.getBoundingBox().top - bounds.height()+10),
-                                (int) translateX(face.getBoundingBox().right),
-                                (int) translateY(face.getBoundingBox().top),drawPaint);
-
-                        canvas.drawText(recognizeFace.getName(),
-                                translateX(face.getBoundingBox().centerX()),
-                                translateY(face.getBoundingBox().top-5),
-                                textPaint);
-
-                        //Log.d("face",recognizeFace.getName());
-                        //draw a rect box around each face
-                        box = new Rect((int) translateX(face.getBoundingBox().left),
-                                (int) translateY(face.getBoundingBox().top),
-                                (int) translateX(face.getBoundingBox().right),
-                                (int) translateY(face.getBoundingBox().bottom));
-                        canvas.drawRect(box, paint);
-                    }
-                }
-            }
-        else {
-            canvas.drawColor(Color.TRANSPARENT, PorterDuff.Mode.MULTIPLY);
-        }*/
-
+    private synchronized Bitmap processFaces(List<FirebaseVisionFace> faces) throws ExecutionException, InterruptedException {
         int count =0;
-        canvas.drawColor(Color.TRANSPARENT, PorterDuff.Mode.MULTIPLY);
+        //canvas.drawColor(Color.TRANSPARENT, PorterDuff.Mode.CLEAR);
         for (int i =0; i<faces.size(); i++) {
             Bitmap croppedFaceBitmap = getFaceBitmap(faces.get(i));
             if (croppedFaceBitmap == null) {
-                return;
+                return null;
             }
             else {
                 if(count <=4){
@@ -287,7 +275,7 @@ public class FaceTrackingAnalyzer extends CameraActivity implements ImageAnalysi
             }
 
         }
-        imageView.setImageBitmap(abitmap);
+        return abitmap;
     }
 
     private synchronized float translateY(float y) {
@@ -295,7 +283,7 @@ public class FaceTrackingAnalyzer extends CameraActivity implements ImageAnalysi
     }
 
     private synchronized float translateX(float x) {
-            return x * widthScaleFactor;
+        return x * widthScaleFactor;
     }
 
     private int degreesToFirebaseRotation(int degrees) {
@@ -321,7 +309,7 @@ public class FaceTrackingAnalyzer extends CameraActivity implements ImageAnalysi
             faceBitmap = Bitmap.createBitmap(originalFrame, face.getBoundingBox().left, face.getBoundingBox().top, face.getBoundingBox().right - face.getBoundingBox().left, face.getBoundingBox().bottom - face.getBoundingBox().top);
         }
         catch (IllegalArgumentException  e){
-           // Log.d("Err123",e.getMessage());
+            // Log.d("Err123",e.getMessage());
         }
         return faceBitmap;
     }

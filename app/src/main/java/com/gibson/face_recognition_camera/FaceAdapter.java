@@ -8,36 +8,26 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ProgressBar;
 import android.widget.TextView;
-import android.widget.Toast;
 import android.widget.ImageView;
 
 import androidx.annotation.NonNull;
 import androidx.constraintlayout.widget.ConstraintLayout;
-import androidx.coordinatorlayout.widget.CoordinatorLayout;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
-import com.bumptech.glide.request.RequestOptions;
-import com.firebase.ui.firestore.FirestoreRecyclerAdapter;
 import com.firebase.ui.firestore.paging.FirestorePagingAdapter;
 import com.firebase.ui.firestore.paging.FirestorePagingOptions;
 import com.firebase.ui.firestore.paging.LoadingState;
-import com.google.android.material.card.MaterialCardView;
-import com.google.android.material.imageview.ShapeableImageView;
 import com.google.android.material.snackbar.Snackbar;
 
-import jp.wasabeef.glide.transformations.RoundedCornersTransformation;
-import jp.wasabeef.glide.transformations.RoundedCornersTransformation.CornerType;
-
 public class FaceAdapter extends FirestorePagingAdapter<Face, FaceAdapter.FaceHolder> {
-
-
 
     private Context context;
     private OnItemClickListener mListener;
     private ProgressBar progressBar;
     private ConstraintLayout constraintLayout;
     private RecyclerView recyclerView;
+    private Base64ImageDB database;
 
     public interface OnItemClickListener {
         void onItemClick(String key);
@@ -61,10 +51,22 @@ public class FaceAdapter extends FirestorePagingAdapter<Face, FaceAdapter.FaceHo
 
     @Override
     protected void onBindViewHolder(@NonNull FaceAdapter.FaceHolder holder, int position, @NonNull Face model) {
-        byte[] decodedBase64String = Base64.decode(model.getBase64(), Base64.DEFAULT);
-        Glide.with(holder.imageView.getContext()).load(decodedBase64String).centerCrop().into(holder.imageView);
+        //byte[] decodedBase64String = Base64.decode(model.getBase64(), Base64.DEFAULT);
+        //Glide.with(holder.imageView.getContext()).load(decodedBase64String).centerCrop().into(holder.imageView);
         holder.textView.setText(model.getName());
         holder.relationshipTextView.setText(model.getRelationship());
+        database = Base64ImageDB.getInstance(context);
+        //Todo slower phone models cannot set Room db fast enough
+        String id = getItem(position).getId();
+        String Base64String = database.base64ImageDao().getImage(getItem(position).getId());
+        String id2 = getItem(position).getId();
+        if(!(Base64String == null)) {
+            byte[] decodedBase64String = Base64.decode(Base64String, Base64.DEFAULT);
+            Glide.with(holder.imageView.getContext()).load(decodedBase64String).thumbnail(0.6f).centerCrop().into(holder.imageView);
+        }
+        else {
+            Glide.with(holder.imageView.getContext()).load(R.drawable.white_add_person_icon).into(holder.imageView);
+        }
         //holder.circleFaceConstraintLayout.setTransitionName(String.valueOf(position));
     }
 

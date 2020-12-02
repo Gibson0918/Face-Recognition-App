@@ -7,8 +7,6 @@ import com.google.firebase.firestore.PropertyName;
 
 public class FaceRecognition {
 
-    @PropertyName("Base64")
-    private String Base64;
     @PropertyName("Embeddings")
     private  float [][] Embedding;
     @PropertyName("Name")

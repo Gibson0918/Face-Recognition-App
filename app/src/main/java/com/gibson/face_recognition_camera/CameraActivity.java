@@ -3,6 +3,7 @@ package com.gibson.face_recognition_camera;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 
+import androidx.camera.camera2.Camera2Config;
 import androidx.camera.core.CameraInfoUnavailableException;
 
 import androidx.camera.core.CameraX;
@@ -20,10 +21,12 @@ import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.hardware.camera2.CaptureRequest;
 import android.hardware.display.DisplayManager;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
+import android.util.Range;
 import android.util.Size;
 import android.view.Display;
 import android.view.TextureView;
@@ -51,6 +54,8 @@ import java.util.Objects;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 
+import static android.view.View.LAYER_TYPE_HARDWARE;
+
 public class CameraActivity extends AppCompatActivity {
 
     private Executor executor = Executors.newSingleThreadExecutor();
@@ -72,6 +77,7 @@ public class CameraActivity extends AppCompatActivity {
     private DisplayManager displayManager;
     private Snackbar snackbar;
     private List<String> nameList = new ArrayList<>();
+//    private CustomImageView customImageView;
 
     /*Todo implement a presentation class to mirror phone output to smart glasses*/
 
@@ -355,20 +361,23 @@ public class CameraActivity extends AppCompatActivity {
     //method to start up camera and set up camera preview
     private void initCamera() {
         CameraX.unbindAll();
-        PreviewConfig pc = new PreviewConfig
+
+        @SuppressLint("RestrictedApi") PreviewConfig.Builder pc = new PreviewConfig
                 .Builder()
                 .setTargetResolution(new Size(textureView.getWidth(), textureView.getHeight()))
-                .setLensFacing(CameraX.LensFacing.BACK)
-                .build();
+                .setLensFacing(CameraX.LensFacing.BACK);
 
-        Preview preview = new Preview(pc);
+        Camera2Config.Extender ext = new Camera2Config.Extender(pc);
+        //ext.setCaptureRequestOption(CaptureRequest.CONTROL_AE_TARGET_FPS_RANGE, new Range<Integer>(,99));
+
+        Preview preview = new Preview(pc.build());
 
         preview.setOnPreviewOutputUpdateListener(output -> {
             ViewGroup vg = (ViewGroup) textureView.getParent();
             vg.removeView(textureView);
             vg.addView(textureView, 0);
             textureView.setSurfaceTexture(output.getSurfaceTexture());
-            
+
         });
 
         ImageAnalysisConfig imageAnalysisConfig = new ImageAnalysisConfig
@@ -377,9 +386,11 @@ public class CameraActivity extends AppCompatActivity {
                 .setTargetResolution(new Size(textureView.getWidth(),textureView.getHeight()))
                 .setLensFacing(CameraX.LensFacing.BACK).build();
 
+
+
         ImageAnalysis imageAnalysis = new ImageAnalysis(imageAnalysisConfig);
         imageAnalysis.setAnalyzer(Runnable::run,
-                new FaceTrackingAnalyzer(textureView, imageView, addFab,CameraX.LensFacing.FRONT,this, faceNet, faceRecognitionList,db,emailAddr));
+                new FaceTrackingAnalyzer(textureView, imageView, addFab,CameraX.LensFacing.FRONT, CameraActivity.this, faceNet, faceRecognitionList, db, emailAddr));
         CameraX.bindToLifecycle(this, preview, imageAnalysis);
     }
 

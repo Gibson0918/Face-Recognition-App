@@ -1,36 +1,27 @@
 package com.gibson.face_recognition_camera;
 
-import android.content.SharedPreferences;
+import android.app.Activity;
 import android.content.res.AssetFileDescriptor;
 import android.content.res.AssetManager;
 import android.graphics.Bitmap;
 import android.os.Build;
-import android.widget.Toast;
 
-import androidx.annotation.NonNull;
 import androidx.annotation.RequiresApi;
 
-import com.google.android.gms.tasks.OnCompleteListener;
-import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
-import com.google.android.gms.tasks.Task;
-import com.google.firebase.firestore.CollectionReference;
+
 import com.google.firebase.firestore.DocumentReference;
-import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.FirebaseFirestore;
-import com.google.firebase.firestore.Query;
-import com.google.firebase.firestore.SetOptions;
-import com.google.firestore.v1.WriteResult;
 
 
 import org.tensorflow.lite.Interpreter;
 import org.tensorflow.lite.gpu.CompatibilityList;
 import org.tensorflow.lite.gpu.GpuDelegate;
+import org.tensorflow.lite.nnapi.NnApiDelegate;
 
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.lang.reflect.Field;
 import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -51,6 +42,7 @@ public class FaceNet {
     private static final int NUM_CHANNELS = 3;
     private static final int NUM_BYTES_PER_CHANNEL = 4;
     private static final int EMBEDDING_SIZE = 192;
+    private Base64ImageDB database;
 
 
     private final int [] intValues = new int [IMAGE_HEIGHT * IMAGE_WIDTH];
@@ -59,27 +51,44 @@ public class FaceNet {
     private MappedByteBuffer tfliteModel;
     private Interpreter tflife;
     private final Interpreter.Options tfliteOptions  = new Interpreter.Options();
-    CompatibilityList compatibilityList = new CompatibilityList();
+    private CompatibilityList compatibilityList = new CompatibilityList();
+    private NnApiDelegate nnApiDelegate = null;
 
     // Initiate face recognition model -> check whether device has a GPU to run inference else it will attempt to use 4 threads for inference.
-    public FaceNet (AssetManager assetManager) throws IOException {
-        tfliteModel = loadModelFile(assetManager);
-        if(compatibilityList.isDelegateSupportedOnThisDevice()){
-            GpuDelegate.Options delegateOptions = compatibilityList.getBestOptionsForThisDevice();
-            GpuDelegate gpuDelegate = new GpuDelegate((delegateOptions));
-            tfliteOptions.addDelegate(gpuDelegate);
-        }
-        else {
-          tfliteOptions.setNumThreads(4);
-        }
+    public FaceNet(AssetManager assetManager) throws IOException {
 
-        tflife = new Interpreter(tfliteModel, tfliteOptions);
-        imgData = ByteBuffer.allocateDirect(BATCH_SIZE
-                * IMAGE_HEIGHT
-                * IMAGE_WIDTH
-                * NUM_CHANNELS
-                * NUM_BYTES_PER_CHANNEL);
-        imgData.order(ByteOrder.nativeOrder());
+        new Thread(()->{
+            try {
+                tfliteModel = loadModelFile(assetManager);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            if(compatibilityList.isDelegateSupportedOnThisDevice()){
+                GpuDelegate.Options delegateOptions = compatibilityList.getBestOptionsForThisDevice();
+                GpuDelegate gpuDelegate = new GpuDelegate((delegateOptions));
+                tfliteOptions.addDelegate(gpuDelegate);
+            }
+            else if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.P){
+                nnApiDelegate = new NnApiDelegate();
+                tfliteOptions.addDelegate(nnApiDelegate);
+            }
+            else {
+                tfliteOptions.setNumThreads(4);
+            }
+
+            try {
+                tflife = new Interpreter(tfliteModel, tfliteOptions);
+            }
+            catch(Exception e) {
+                throw new RuntimeException(e);
+            }
+            imgData = ByteBuffer.allocateDirect(BATCH_SIZE
+                    * IMAGE_HEIGHT
+                    * IMAGE_WIDTH
+                    * NUM_CHANNELS
+                    * NUM_BYTES_PER_CHANNEL);
+            imgData.order(ByteOrder.nativeOrder());
+        }).start();
     }
 
     //Method to load the model into memory
@@ -124,7 +133,7 @@ public class FaceNet {
     }
 
     //Method to run inference
-    private float [][] run (Bitmap bitmap)  {
+    private synchronized float [][] run (Bitmap bitmap)  {
         bitmap  = resizedBitmap(bitmap, IMAGE_HEIGHT, IMAGE_WIDTH);
         convertBitmapToByteBuffer(bitmap);
         float [][] faceEmbeddings = new float[1][192];
@@ -164,7 +173,7 @@ public class FaceNet {
     }
 
 
-    public List<FaceRecognition> addFaceToRecognitionList(String name, String encodedBase64 ,Bitmap bitmap, List<FaceRecognition> faceRecognitionList, FirebaseFirestore db, String emailAddr, String relationship){
+    public List<FaceRecognition> addFaceToRecognitionList(String name, String encodedBase64 , Bitmap bitmap, List<FaceRecognition> faceRecognitionList, FirebaseFirestore db, String emailAddr, String relationship, Activity context){
         float[][] faceEmbeddings = run(bitmap);
         FaceRecognition face = new FaceRecognition(name, faceEmbeddings, relationship);
         faceRecognitionList.add(face);
@@ -178,21 +187,20 @@ public class FaceNet {
         }
         faces.put("Embeddings",embeddingsList);
         faces.put("TimeStamp", FieldValue.serverTimestamp());
-        faces.put("Base64", encodedBase64);
         faces.put("Relationship", relationship);
-        db.collection(emailAddr).add(faces).addOnSuccessListener(new OnSuccessListener<DocumentReference>() {
+        DocumentReference newData =  db.collection(emailAddr).document();
+        newData.set(faces).addOnSuccessListener(new OnSuccessListener<Void>() {
             @Override
-            public void onSuccess(DocumentReference documentReference) {
-                //Log.d("Success!",documentReference.getId());
-            }
-        }).addOnFailureListener(new OnFailureListener() {
-            @Override
-            public void onFailure(@NonNull Exception e) {
-                //Log.d("Failed",e.toString());
+            public void onSuccess(Void aVoid) {
+                //Snackbar.make(context.findViewById(R.id.coordinatorLayout), "Data added successfully", Snackbar.LENGTH_SHORT).show();
             }
         });
-
-
+        String docID = newData.getId();
+        database = Base64ImageDB.getInstance(context);
+        Base64Image data = new Base64Image();
+        data.setDocID(docID);
+        data.setBase64(encodedBase64);
+        database.base64ImageDao().insert(data);
         return faceRecognitionList;
     }
 
@@ -200,6 +208,9 @@ public class FaceNet {
         if(tflife != null) {
             tflife.close();
             tflife = null;
+            if(null!=nnApiDelegate){
+                nnApiDelegate.close();
+            }
         }
         tfliteModel = null;
     }

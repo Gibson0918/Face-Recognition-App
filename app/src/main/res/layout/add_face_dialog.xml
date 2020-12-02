@@ -8,6 +8,7 @@
     android:orientation="vertical"
     android:padding="16dp">
 
+
     <TextView
         android:id="@+id/dlg_title"
         android:layout_width="wrap_content"

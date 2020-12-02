@@ -28,6 +28,7 @@ public class DetailsActivity extends AppCompatActivity {
     private FirebaseFirestore db = FirebaseFirestore.getInstance();
     private ImageView imageView;
     private TextView textView;
+    private Base64ImageDB database;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -48,14 +49,16 @@ public class DetailsActivity extends AppCompatActivity {
         Intent intent = getIntent();
         String key = intent.getStringExtra("key");
         String emailAddr = intent.getStringExtra("emailAddr");
+        database = Base64ImageDB.getInstance(getApplicationContext());
+        String base64String = database.base64ImageDao().getImage(key);
         DocumentReference dbRef = db.collection(emailAddr).document(key);
         dbRef.get().addOnCompleteListener(new OnCompleteListener<DocumentSnapshot>() {
             @Override
             public void onComplete(@NonNull Task<DocumentSnapshot> task) {
                 DocumentSnapshot document = task.getResult();
                 textView.setText( document.get("Name").toString());
-                byte[] decodedBase64String = Base64.decode(document.get("Base64").toString(), Base64.DEFAULT);
-                Glide.with(DetailsActivity.this).load(decodedBase64String).into(imageView);
+                byte[] decodedBase64String = Base64.decode(base64String, Base64.DEFAULT);
+                Glide.with(DetailsActivity.this).load(decodedBase64String).centerCrop().into(imageView);
             }
         });
 
