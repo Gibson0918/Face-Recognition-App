@@ -65,7 +65,7 @@ public class FaceTrackingAnalyzer extends CameraActivity implements ImageAnalysi
     private Canvas canvas;
     private float widthScaleFactor = 1.0f;
     private float heightScaleFactor = 1.0f;
-    private CameraX.LensFacing lens;
+    //private CameraX.LensFacing lens;
     private FirebaseVisionImage fbImage;
     private FloatingActionButton addFab;
     private Activity context;
@@ -77,10 +77,10 @@ public class FaceTrackingAnalyzer extends CameraActivity implements ImageAnalysi
     private String emailAddr;
 
 
-    public FaceTrackingAnalyzer(TextureView textureView, ImageView imageView, FloatingActionButton addFab, CameraX.LensFacing lens, Activity context, FaceNet faceNet, List<FaceRecognition> faceRecognitionList, FirebaseFirestore db, String emailAddr) {
+    public FaceTrackingAnalyzer(TextureView textureView, ImageView imageView, FloatingActionButton addFab, Activity context, FaceNet faceNet, List<FaceRecognition> faceRecognitionList, FirebaseFirestore db, String emailAddr) {
         this.textureView = textureView;
         this.imageView = imageView;
-        this.lens = lens;
+        //this.lens = lens;
         this.addFab = addFab;
         this.context = context;
         this.faceNet = faceNet;

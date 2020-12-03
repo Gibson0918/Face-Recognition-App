@@ -208,9 +208,6 @@ public class FaceNet {
         if(tflife != null) {
             tflife.close();
             tflife = null;
-            if(null!=nnApiDelegate){
-                nnApiDelegate.close();
-            }
         }
         tfliteModel = null;
     }

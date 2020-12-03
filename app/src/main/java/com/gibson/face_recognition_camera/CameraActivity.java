@@ -21,12 +21,9 @@ import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
-import android.hardware.camera2.CaptureRequest;
 import android.hardware.display.DisplayManager;
 import android.net.Uri;
 import android.os.Bundle;
-import android.os.Handler;
-import android.util.Range;
 import android.util.Size;
 import android.view.Display;
 import android.view.TextureView;
@@ -35,12 +32,14 @@ import android.view.ViewGroup;
 import android.view.Window;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
+import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.snackbar.Snackbar;
+import com.google.android.material.textview.MaterialTextView;
 import com.google.android.material.transition.platform.MaterialContainerTransformSharedElementCallback;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
@@ -48,17 +47,14 @@ import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
 import com.madgaze.smartglass.otg.sensor.SplitUSBSerial;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import java.util.concurrent.Executor;
-import java.util.concurrent.Executors;
-
-import static android.view.View.LAYER_TYPE_HARDWARE;
 
 public class CameraActivity extends AppCompatActivity {
 
-    private Executor executor = Executors.newSingleThreadExecutor();
+    private CameraX.LensFacing lens = CameraX.LensFacing.BACK;
     private int REQUEST_CODE_PERMISSIONS = 1001;
     private final String[] REQUIRED_PERMISSIONS = new String[]{"android.permission.CAMERA", "android.permission.WRITE_EXTERNAL_STORAGE"};
     private TextureView textureView;
@@ -69,7 +65,7 @@ public class CameraActivity extends AppCompatActivity {
     private String emailAddr;
     private Animation rotateOpen, rotateClose, fromBottom, toBottom, showHelperText, hideHelperText;
     private FloatingActionButton menuFab, sign_out_fab, searchFab, addFab, editFab;
-    private TextView sign_out_tv, search_tv, add_tv,edit_tv;
+    private MaterialTextView sign_out_tv, search_tv, add_tv,edit_tv;
     private boolean clicked = false;
     private FirebaseAuth mAuth;
     private FirebaseUser currentUser;
@@ -77,7 +73,7 @@ public class CameraActivity extends AppCompatActivity {
     private DisplayManager displayManager;
     private Snackbar snackbar;
     private List<String> nameList = new ArrayList<>();
-//    private CustomImageView customImageView;
+    private Button toggleButton;
 
     /*Todo implement a presentation class to mirror phone output to smart glasses*/
 
@@ -100,7 +96,6 @@ public class CameraActivity extends AppCompatActivity {
             bindDisplayItem();
             loadAnimation();
 
-
             menuFab.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View view) {
@@ -111,22 +106,11 @@ public class CameraActivity extends AppCompatActivity {
                     showHelperTextAnimation(clicked);
                     if (!clicked) {
                         clicked = true;
-                        /*if (clicked == true) {
-                            new Handler().postDelayed(new Runnable() {
-                                @Override
-                                public void run() {
-                                    menuFab.performClick();
-                                    clicked = false;
-                                }
-                            }, 10000);
-                        }*/
                     } else {
                         clicked = false;
                     }
                 }
             });
-
-
 
         /*Populate the faceRecognitionList on startup from firestore
         running fireStore request on a new thread*/
@@ -148,7 +132,6 @@ public class CameraActivity extends AppCompatActivity {
                     }
                 });
             }).start();
-
 
             // <<Load the facial recognition model  >>
             faceNet = null;
@@ -211,7 +194,9 @@ public class CameraActivity extends AppCompatActivity {
                 }).start();
             });
 
-            sign_out_fab.setOnClickListener(view -> signOut());
+            sign_out_fab.setOnClickListener(view -> {
+                signOut();
+            });
         }
     }
 
@@ -238,7 +223,7 @@ public class CameraActivity extends AppCompatActivity {
         }
     }
 
-    private void  bindDisplayItem() {
+    private void bindDisplayItem() {
         textureView = findViewById(R.id.textureView);
         imageView  = findViewById(R.id.imageView);
         faceRecognitionList = new ArrayList<>();
@@ -255,6 +240,7 @@ public class CameraActivity extends AppCompatActivity {
         search_tv = findViewById(R.id.searchTextView);
         add_tv = findViewById(R.id.addTextView);
         edit_tv = findViewById(R.id.editTextView);
+        toggleButton = findViewById(R.id.toggleBtn);
     }
 
     private void loadAnimation(){
@@ -347,15 +333,22 @@ public class CameraActivity extends AppCompatActivity {
         }
     }
 
-
     @SuppressLint("RestrictedApi")
     private void startCamera() {
-        try {
-            CameraX.getCameraWithLensFacing(CameraX.LensFacing.FRONT);
             initCamera();
-        } catch (CameraInfoUnavailableException e) {
-            e.printStackTrace();
-        }
+            toggleButton.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    lens = lens == CameraX.LensFacing.FRONT ? CameraX.LensFacing.BACK : CameraX.LensFacing.FRONT;
+                    try {
+                        // Only bind use cases if we can query a camera with this orientation
+                        CameraX.getCameraWithLensFacing(lens);
+                        initCamera();
+                    } catch (CameraInfoUnavailableException e) {
+                        e.printStackTrace();
+                    }
+                }
+            });
     }
 
     //method to start up camera and set up camera preview
@@ -365,7 +358,7 @@ public class CameraActivity extends AppCompatActivity {
         @SuppressLint("RestrictedApi") PreviewConfig.Builder pc = new PreviewConfig
                 .Builder()
                 .setTargetResolution(new Size(textureView.getWidth(), textureView.getHeight()))
-                .setLensFacing(CameraX.LensFacing.BACK);
+                .setLensFacing(lens);
 
         Camera2Config.Extender ext = new Camera2Config.Extender(pc);
         //ext.setCaptureRequestOption(CaptureRequest.CONTROL_AE_TARGET_FPS_RANGE, new Range<Integer>(,99));
@@ -384,13 +377,13 @@ public class CameraActivity extends AppCompatActivity {
                 .Builder()
                 .setImageReaderMode(ImageAnalysis.ImageReaderMode.ACQUIRE_LATEST_IMAGE)
                 .setTargetResolution(new Size(textureView.getWidth(),textureView.getHeight()))
-                .setLensFacing(CameraX.LensFacing.BACK).build();
+                .setLensFacing(lens).build();
 
 
 
         ImageAnalysis imageAnalysis = new ImageAnalysis(imageAnalysisConfig);
         imageAnalysis.setAnalyzer(Runnable::run,
-                new FaceTrackingAnalyzer(textureView, imageView, addFab,CameraX.LensFacing.FRONT, CameraActivity.this, faceNet, faceRecognitionList, db, emailAddr));
+                new FaceTrackingAnalyzer(textureView, imageView, addFab, CameraActivity.this, faceNet, faceRecognitionList, db, emailAddr));
         CameraX.bindToLifecycle(this, preview, imageAnalysis);
     }
 
@@ -447,6 +440,7 @@ public class CameraActivity extends AppCompatActivity {
 
     private void signOut() {
             FirebaseAuth.getInstance().signOut();
+            faceNet.close();
             Toast.makeText(CameraActivity.this, "Signed out successfully", Toast.LENGTH_LONG).show();
             Intent intent = new Intent(CameraActivity.this, LoginActivity.class);
             startActivity(intent);
