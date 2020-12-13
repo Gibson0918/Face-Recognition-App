@@ -22,6 +22,8 @@ import com.google.firebase.firestore.CollectionReference;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.Query;
 
+import org.xml.sax.helpers.XMLReaderAdapter;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -59,7 +61,7 @@ public class AlbumActivity extends AppCompatActivity implements AdapterView.OnIt
 //        getWindow().setSharedElementReenterTransition(transform);
 
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_edit);
+        setContentView(R.layout.activity_album);
         mAuth = FirebaseAuth.getInstance();
         currentUser = mAuth.getCurrentUser();
         emailAddr = currentUser.getEmail();
@@ -68,6 +70,8 @@ public class AlbumActivity extends AppCompatActivity implements AdapterView.OnIt
         constraintLayout = findViewById(R.id.AlbumConstraintLayout);
         setupRecyclerView(progressBar, constraintLayout);
     }
+
+
 
     public void setupRecyclerView(ProgressBar progressBar, ConstraintLayout constraintLayout) {
         nameList = getIntent().getStringArrayListExtra("nameList");
@@ -93,7 +97,7 @@ public class AlbumActivity extends AppCompatActivity implements AdapterView.OnIt
         faceAdapter = new FaceAdapter(options, this, progressBar, constraintLayout, recyclerView);
         recyclerView.setHasFixedSize(true);
         // already set layoutmanager in the xml file
-        adapter.notifyDataSetChanged();
+        //adapter.notifyDataSetChanged();
         recyclerView.setAdapter(faceAdapter);
 
         faceAdapter.setOnItemClickListener(new FaceAdapter.OnItemClickListener() {
@@ -102,6 +106,7 @@ public class AlbumActivity extends AppCompatActivity implements AdapterView.OnIt
                 Intent intent = new Intent(AlbumActivity.this, DetailsActivity.class);
                 intent.putExtra("key", key);
                 intent.putExtra("emailAddr", emailAddr);
+                intent.putStringArrayListExtra("nameList", (ArrayList<String>) nameList);
                 startActivity(intent);
             }
         });
@@ -111,6 +116,13 @@ public class AlbumActivity extends AppCompatActivity implements AdapterView.OnIt
     protected void onStart(){
         super.onStart();
         faceAdapter.startListening();
+    }
+
+    @Override
+    protected void onResume(){
+        super.onResume();
+        faceAdapter.refresh();
+        nameList = getIntent().getStringArrayListExtra("nameList");
     }
 
     @Override

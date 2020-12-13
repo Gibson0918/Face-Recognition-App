@@ -207,6 +207,30 @@ public class CameraActivity extends AppCompatActivity {
     }
 
     @Override
+    protected void onResume(){
+        super.onResume();
+        faceRecognitionList.clear();
+        new Thread(() -> {
+            db = FirebaseFirestore.getInstance();
+            db.collection(emailAddr).get().addOnCompleteListener(task -> {
+                if (task.isSuccessful()) {
+                    for (QueryDocumentSnapshot documentSnapshot : Objects.requireNonNull(task.getResult())) {
+                        float[][] faceEmbeddings = new float[1][192];
+                        //List<Float> embeddings = (List<Float>) documentSnapshot.get("Embeddings");
+                        List<Double> embeddings = (List<Double>) documentSnapshot.get("Embeddings");
+                        for (int i = 0; i < 192; i++) {
+                            assert embeddings != null;
+                            faceEmbeddings[0][i] = embeddings.get(i).floatValue();
+                        }
+                        FaceRecognition face = new FaceRecognition(Objects.requireNonNull(documentSnapshot.get("Name")).toString(), faceEmbeddings,  Objects.requireNonNull(documentSnapshot.get("Relationship")).toString());
+                        faceRecognitionList.add(face);
+                    }
+                }
+            });
+        }).start();
+    }
+
+    @Override
     protected void onStop() {
         super.onStop();
         SplitUSBSerial.getInstance(this).onStart();
@@ -378,8 +402,6 @@ public class CameraActivity extends AppCompatActivity {
                 .setImageReaderMode(ImageAnalysis.ImageReaderMode.ACQUIRE_LATEST_IMAGE)
                 .setTargetResolution(new Size(textureView.getWidth(),textureView.getHeight()))
                 .setLensFacing(lens).build();
-
-
 
         ImageAnalysis imageAnalysis = new ImageAnalysis(imageAnalysisConfig);
         imageAnalysis.setAnalyzer(Runnable::run,

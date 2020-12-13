@@ -15,10 +15,10 @@ public interface Base64ImageDao {
     void insert(Base64Image base64Image);
 
     //Delete single query
-    @Delete
-    void delete(Base64Image base64Image);
+    @Query("DELETE FROM Base64Image WHERE docID= :docID")
+    void deleteSingleItem(String docID);
 
-    //update query
+    //update query (if you wish to update the image, not added this functionality yet)
     @Query("UPDATE Base64Image SET Base64_String = :base64 WHERE docID = :docID")
     void update(String docID,String base64);
 
