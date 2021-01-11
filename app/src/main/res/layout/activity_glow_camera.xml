@@ -1,0 +1,174 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/glow_coordinatorLayout"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".GlowCameraActivity">
+
+
+    <TextureView
+        android:id="@+id/glow_textureView"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <ImageView
+        android:id="@+id/glow_imageView"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:alpha="0.8"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.0"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_bias="0.0" />
+
+    <com.madgaze.smartglass.view.SplitCameraView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:id="@+id/splitCameraView"
+        android:layout_centerInParent="true"/>
+
+
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/glow_menu_fab"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|right"
+        android:layout_marginRight="20sp"
+        android:layout_marginBottom="20sp"
+        android:clickable="true"
+        android:focusable="true"
+        app:backgroundTint="#673AB7"
+        app:srcCompat="@drawable/white_settings_logo" />
+
+    <Space
+        android:id="@+id/gspace1"
+        android:layout_width="56dp"
+        android:layout_height="10dp"
+        android:layout_gravity="end"
+        android:paddingTop="20sp"
+        android:paddingBottom="20sp"
+        app:layout_anchor="@id/glow_menu_fab" />
+
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/glow_sign_out_fab"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:clickable="true"
+        android:focusable="true"
+        android:visibility="invisible"
+        app:backgroundTint="#FFC0CB"
+        app:layout_anchor="@id/gspace1"
+        android:layout_gravity="end"
+        app:srcCompat="@drawable/white_sign_out_logo" />
+
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/glow_search_fab"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:clickable="true"
+        android:focusable="true"
+        android:visibility="invisible"
+        app:backgroundTint="#FFC0CB"
+        app:srcCompat="@drawable/ic_google_lens"
+        android:layout_gravity="end"
+        app:layout_anchor="@id/glow_edit_fab"/>
+
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/glow_add_fab"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:clickable="true"
+        android:focusable="true"
+        android:visibility="invisible"
+        app:backgroundTint="#FFC0CB"
+        app:srcCompat="@drawable/white_plus_logo"
+        android:layout_gravity="end"
+        app:layout_anchor="@id/glow_search_fab"
+        />
+
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/glow_edit_fab"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:clickable="true"
+        android:focusable="true"
+        android:visibility="invisible"
+        app:backgroundTint="#FFC0CB"
+        app:srcCompat="@drawable/white_brightness_setting_logo"
+        android:layout_gravity="end"
+        app:layout_anchor="@id/glow_sign_out_fab"
+        android:transitionName="shared_element_container"/>
+
+    <com.google.android.material.textview.MaterialTextView
+        android:id="@+id/glow_addTextView"
+        android:layout_width="35sp"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center|left"
+        android:background="@color/light_grey"
+        android:fontFamily="@font/regular"
+        android:text="Add"
+        android:textAlignment="center"
+        android:visibility="invisible"
+        app:layout_anchor="@id/glow_add_fab"
+        app:layout_anchorGravity="center_vertical" />
+
+    <com.google.android.material.textview.MaterialTextView
+        android:id="@+id/glow_searchTextView"
+        android:layout_width="83dp"
+        android:layout_height="21dp"
+        android:background="@color/light_grey"
+        android:fontFamily="@font/regular"
+        android:text="Google Lens"
+        android:textAlignment="center"
+        android:visibility="invisible"
+        app:layout_anchor="@id/glow_search_fab"
+        android:layout_gravity="center|left"
+        app:layout_anchorGravity="center_vertical"/>
+
+    <com.google.android.material.textview.MaterialTextView
+        android:id="@+id/glow_editTextView"
+        android:layout_width="45sp"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center|left"
+        android:background="@color/light_grey"
+        android:fontFamily="@font/regular"
+        android:text="Album"
+        android:textAlignment="center"
+        android:visibility="invisible"
+        app:layout_anchor="@id/glow_edit_fab"
+        app:layout_anchorGravity="center_vertical" />
+
+    <com.google.android.material.textview.MaterialTextView
+        android:id="@+id/glow_sign_out_tv"
+        android:layout_width="60sp"
+        android:layout_height="wrap_content"
+        android:background="@color/light_grey"
+        android:fontFamily="@font/regular"
+        android:text="Sign Out"
+        android:textAlignment="center"
+        android:visibility="invisible"
+        app:layout_anchor="@id/glow_sign_out_fab"
+        android:layout_gravity="center|left"
+        app:layout_anchorGravity="center_vertical"/>
+
+
+    <Button
+        android:id="@+id/glow_toggleBtn"
+        style="@style/Widget.App.Button.OutlinedButton.IconOnly"
+        android:layout_width="59dp"
+        android:layout_height="59dp"
+        android:layout_marginTop="10sp"
+        android:alpha="1"
+        android:background="#80FFFFFF"
+        app:icon="@drawable/ic_switch_camera" />
+
+
+</androidx.coordinatorlayout.widget.CoordinatorLayout>

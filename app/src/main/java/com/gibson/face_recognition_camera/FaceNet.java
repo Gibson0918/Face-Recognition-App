@@ -107,7 +107,7 @@ public class FaceNet {
         }
         imgData.rewind();
         bitmap.getPixels(intValues, 0 , bitmap.getWidth(), 0, 0, bitmap.getWidth(), bitmap.getHeight());
-        //Convert the image to floating point (will look at quantized model in the future)
+        //Convert the image to floating point
         int pixel = 0;
         for (int i = 0; i < IMAGE_HEIGHT; ++i) {
             for (int j = 0; j < IMAGE_WIDTH; ++j) {

@@ -24,6 +24,8 @@ import android.content.pm.PackageManager;
 import android.hardware.display.DisplayManager;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.util.Size;
 import android.view.Display;
 import android.view.TextureView;
@@ -75,23 +77,35 @@ public class CameraActivity extends AppCompatActivity {
     private List<String> nameList = new ArrayList<>();
     private Button toggleButton;
 
-    /*Todo implement a presentation class to mirror phone output to smart glasses*/
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-        getWindow().requestFeature(Window.FEATURE_ACTIVITY_TRANSITIONS);
-        setExitSharedElementCallback(new MaterialContainerTransformSharedElementCallback());
-        getWindow().setSharedElementsUseOverlay(false);
+        //getWindow().requestFeature(Window.FEATURE_ACTIVITY_TRANSITIONS);
+        //setExitSharedElementCallback(new MaterialContainerTransformSharedElementCallback());
+        //getWindow().setSharedElementsUseOverlay(false);
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_camera);
+        //iSConnected variable to check if glow is connected
         boolean isConnected = SplitUSBSerial.getInstance(this).isDeviceConnected();
         if (isConnected) {
-            snackbar = Snackbar.make(findViewById(R.id.coordinatorLayout),"Glow is connected! Switching to Glow", Snackbar.LENGTH_LONG);
+            snackbar = Snackbar.make(findViewById(R.id.coordinatorLayout),"Glow is connected! Switching to Glow's interface", Snackbar.LENGTH_LONG);
             snackbar.show();
-            initVideo();
+            //delay switching to a new activity for 2 sec to show snackbar to user
+            new Handler(Looper.getMainLooper()).postDelayed(new Runnable() {
+                @Override
+                public void run() {
+                    //start glow camera activity
+                    Intent glowIntent = new Intent(CameraActivity.this, GlowCameraActivity.class);
+                    startActivity(glowIntent);
+                    finish();
+                    //initVideo();
+                }
+            },2000);
+            //initVideo();
         }
         else {
-            snackbar = Snackbar.make(findViewById(R.id.coordinatorLayout),"Glow isn't connected! Using Device's camera", Snackbar.LENGTH_LONG);
+            snackbar = Snackbar.make(findViewById(R.id.coordinatorLayout),"Glow isn't connected! Using Device's camera. Please check USB connection!", Snackbar.LENGTH_LONG);
             snackbar.show();
             bindDisplayItem();
             loadAnimation();
