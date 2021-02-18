@@ -18,6 +18,8 @@ import android.util.Base64;
 import android.view.LayoutInflater;
 import android.view.TextureView;
 import android.view.View;
+import android.widget.ArrayAdapter;
+import android.widget.AutoCompleteTextView;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
@@ -37,6 +39,7 @@ import com.google.android.gms.tasks.Task;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.snackbar.Snackbar;
+import com.google.android.material.textfield.TextInputLayout;
 import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
@@ -49,6 +52,7 @@ import com.google.firebase.ml.vision.face.FirebaseVisionFaceDetectorOptions;
 
 
 import java.io.ByteArrayOutputStream;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
@@ -154,11 +158,21 @@ public class FaceTrackingAnalyzer extends CameraActivity implements ImageAnalysi
                                 ImageView ivFace = dialogLayout.findViewById(R.id.dlg_image);
                                 TextView tvTitle = dialogLayout.findViewById(R.id.dlg_title);
                                 EditText etName = dialogLayout.findViewById(R.id.dlg_input);
-                                EditText relationShipTxt = dialogLayout.findViewById(R.id.dlg_relationship_input);
+
+                                TextInputLayout relationshipTIL = dialogLayout.findViewById(R.id.relationshipInputLayout);
+                                AutoCompleteTextView relationshipACTV = dialogLayout.findViewById(R.id.relationshipAutoCompleteTextView);
+                                ArrayList<String> relationshipArrayList = new ArrayList<String>();
+                                relationshipArrayList.add("Family & Relatives");
+                                relationshipArrayList.add("Friends");
+                                relationshipArrayList.add("Colleagues");
+                                relationshipArrayList.add("Others");
+                                ArrayAdapter<String> arrayAdapter = new ArrayAdapter<>(context, R.layout.support_simple_spinner_dropdown_item, relationshipArrayList);
+                                relationshipACTV.setAdapter(arrayAdapter);
+                                relationshipACTV.setThreshold(1);
                                 tvTitle.setText("Add Face");
                                 ivFace.setImageBitmap(croppedFaceBitmap);
                                 etName.setHint("Input Name");
-                                relationShipTxt.setHint("Input Relationship");
+
                                 AlertDialog builder = new AlertDialog.Builder(context).setView(dialogLayout).setPositiveButton("Ok", null).create();
                                 builder.setOnShowListener(new DialogInterface.OnShowListener() {
                                     @Override
@@ -168,7 +182,8 @@ public class FaceTrackingAnalyzer extends CameraActivity implements ImageAnalysi
                                             @Override
                                             public void onClick(View v) {
                                                 String name = etName.getText().toString();
-                                                String relationship = relationShipTxt.getText().toString();
+
+                                                String relationship = relationshipACTV.getText().toString();
                                                 if (name.isEmpty() || relationship.isEmpty() ) {
                                                     Snackbar.make(v,"Please fill in all details!", Snackbar.LENGTH_SHORT).show();
                                                 }
@@ -254,7 +269,7 @@ public class FaceTrackingAnalyzer extends CameraActivity implements ImageAnalysi
                     FaceRecognition recognizeFace = faceRecognitionFutureTask.get();
                     textPaint.getTextBounds(recognizeFace.getName(),0,recognizeFace.getName().length(),bounds);
                     canvas.drawRect((int) translateX(faces.get(i).getBoundingBox().left),
-                            (int) translateY(faces.get(i).getBoundingBox().top - bounds.height()+10),
+                            (int) translateY(faces.get(i).getBoundingBox().top - bounds.height()),
                             (int) translateX(faces.get(i).getBoundingBox().right),
                             (int) translateY(faces.get(i).getBoundingBox().top),drawPaint);
 

@@ -48,6 +48,7 @@ import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
 import com.madgaze.smartglass.otg.sensor.SplitUSBSerial;
+import com.madgaze.smartglass.otg.sensor.USBSerial2;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -58,7 +59,7 @@ public class CameraActivity extends AppCompatActivity {
 
     private CameraX.LensFacing lens = CameraX.LensFacing.BACK;
     private int REQUEST_CODE_PERMISSIONS = 1001;
-    private final String[] REQUIRED_PERMISSIONS = new String[]{"android.permission.CAMERA", "android.permission.WRITE_EXTERNAL_STORAGE"};
+    private final String[] REQUIRED_PERMISSIONS = new String[]{"android.permission.CAMERA", "android.permission.WRITE_EXTERNAL_STORAGE", "android.permission.RECORD_AUDIO"};
     private TextureView textureView;
     private ImageView imageView;
     private FaceNet faceNet;
@@ -88,23 +89,36 @@ public class CameraActivity extends AppCompatActivity {
         setContentView(R.layout.activity_camera);
         //iSConnected variable to check if glow is connected
         boolean isConnected = SplitUSBSerial.getInstance(this).isDeviceConnected();
-        if (isConnected) {
-            snackbar = Snackbar.make(findViewById(R.id.coordinatorLayout),"Glow is connected! Switching to Glow's interface", Snackbar.LENGTH_LONG);
-            snackbar.show();
-            //delay switching to a new activity for 2 sec to show snackbar to user
-            new Handler(Looper.getMainLooper()).postDelayed(new Runnable() {
-                @Override
-                public void run() {
-                    //start glow camera activity
-                    Intent glowIntent = new Intent(CameraActivity.this, GlowCameraActivity.class);
-                    startActivity(glowIntent);
-                    finish();
-                    //initVideo();
-                }
-            },2000);
-            //initVideo();
-        }
-        else {
+        SplitUSBSerial.getInstance(this).setConnectionCallback(new USBSerial2.ConnectionCallback() {
+            @Override
+            public void onConnected() {
+                snackbar = Snackbar.make(findViewById(R.id.coordinatorLayout),"Glow is connected! Switching to Glow's interface", Snackbar.LENGTH_LONG);
+                snackbar.show();
+                //delay switching to a new activity for 2 sec to show snackbar to user
+                new Handler(Looper.getMainLooper()).postDelayed(new Runnable() {
+                    @Override
+                    public void run() {
+                        //start glow camera activity
+                        Intent glowIntent = new Intent(CameraActivity.this, GlowCameraActivity.class);
+                        startActivity(glowIntent);
+                        finish();
+                        //initVideo();
+                    }
+                },2000);
+            }
+
+            @Override
+            public void onDisconnected() {
+
+            }
+
+            @Override
+            public void onError(int i) {
+
+            }
+        });
+        if (!isConnected) {
+
             snackbar = Snackbar.make(findViewById(R.id.coordinatorLayout),"Glow isn't connected! Using Device's camera. Please check USB connection!", Snackbar.LENGTH_LONG);
             snackbar.show();
             bindDisplayItem();
@@ -250,7 +264,7 @@ public class CameraActivity extends AppCompatActivity {
         SplitUSBSerial.getInstance(this).onStart();
     }
 
-    private void initVideo() {
+  /*  private void initVideo() {
         if(displayManager == null) {
             displayManager = (DisplayManager) getSystemService(Context.DISPLAY_SERVICE);
             Display[] displays = displayManager.getDisplays();
@@ -259,7 +273,7 @@ public class CameraActivity extends AppCompatActivity {
                 screenPresentation.show();
             }
         }
-    }
+    }*/
 
     private void bindDisplayItem() {
         textureView = findViewById(R.id.textureView);
@@ -408,7 +422,6 @@ public class CameraActivity extends AppCompatActivity {
             vg.removeView(textureView);
             vg.addView(textureView, 0);
             textureView.setSurfaceTexture(output.getSurfaceTexture());
-
         });
 
         ImageAnalysisConfig imageAnalysisConfig = new ImageAnalysisConfig

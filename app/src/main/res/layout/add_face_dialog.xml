@@ -57,24 +57,25 @@
         tools:layout_conversion_absoluteHeight="45dp"
         tools:layout_conversion_absoluteWidth="200dp" />
 
-    <EditText
-        android:id="@+id/dlg_relationship_input"
-        android:layout_width="250sp"
-        android:layout_height="35sp"
-        android:layout_marginTop="20dp"
-        android:background="@drawable/custom_text_input"
-        android:drawableStart="@drawable/purple_person_icon"
-        android:drawablePadding="6sp"
-        android:hint="Relationship"
-        android:inputType="textPersonName"
-
-        android:paddingStart="12dp"
-        android:paddingEnd="12dp"
+    <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/relationshipInputLayout"
+        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
+        android:layout_width="242dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
         app:layout_constraintEnd_toEndOf="@+id/dlg_input"
-        app:layout_constraintHorizontal_bias="0.0"
         app:layout_constraintStart_toStartOf="@+id/dlg_input"
         app:layout_constraintTop_toBottomOf="@+id/dlg_input"
-        tools:layout_conversion_absoluteHeight="45dp"
-        tools:layout_conversion_absoluteWidth="200dp" />
+        app:startIconDrawable="@drawable/purple_person_icon">
+
+
+        <AutoCompleteTextView
+            android:id="@+id/relationshipAutoCompleteTextView"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:fontFamily="@font/regular"
+            android:hint="Relationship"
+            android:inputType="none" />
+    </com.google.android.material.textfield.TextInputLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

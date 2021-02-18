@@ -1,6 +1,7 @@
 package com.gibson.face_recognition_camera;
 
 import android.content.Context;
+import android.database.CursorWindow;
 import android.util.Base64;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -19,6 +20,8 @@ import com.firebase.ui.firestore.paging.FirestorePagingAdapter;
 import com.firebase.ui.firestore.paging.FirestorePagingOptions;
 import com.firebase.ui.firestore.paging.LoadingState;
 import com.google.android.material.snackbar.Snackbar;
+
+import java.lang.reflect.Field;
 
 public class FaceAdapter extends FirestorePagingAdapter<Face, FaceAdapter.FaceHolder> {
 
@@ -55,8 +58,15 @@ public class FaceAdapter extends FirestorePagingAdapter<Face, FaceAdapter.FaceHo
         //Glide.with(holder.imageView.getContext()).load(decodedBase64String).centerCrop().into(holder.imageView);
         holder.textView.setText(model.getName());
         holder.relationshipTextView.setText(model.getRelationship());
+        try{
+            Field field = CursorWindow.class.getDeclaredField("sCursorWindowSize");
+            field.setAccessible(true);
+            field.set(null, 100 * 1024 *1024); //Set size to 100MB per cursor
+        } catch (NoSuchFieldException | IllegalAccessException e) {
+            e.printStackTrace();
+        }
         database = Base64ImageDB.getInstance(context);
-        //Todo slower phone models cannot set Room db fast enough
+
         String id = getItem(position).getId();
         String Base64String = database.base64ImageDao().getImage(getItem(position).getId());
         String id2 = getItem(position).getId();

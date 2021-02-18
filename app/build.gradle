@@ -56,7 +56,7 @@ dependencies {
 
     implementation 'androidx.cardview:cardview:1.0.0'
 
-    implementation 'com.google.android.material:material:1.2.0'
+    implementation 'com.google.android.material:material:1.2.1'
     implementation "androidx.coordinatorlayout:coordinatorlayout:1.1.0"
 
     //Mad Gaze stuff below
@@ -104,5 +104,7 @@ dependencies {
 
     //lottie animation for splash screen
     implementation 'com.airbnb.android:lottie:3.4.4'
+
+    implementation 'com.valdesekamdem.library:md-toast:0.9.0'
 
 }
