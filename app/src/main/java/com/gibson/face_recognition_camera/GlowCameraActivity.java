@@ -161,11 +161,7 @@ public class GlowCameraActivity extends AppCompatActivity {
                 byte[] imageBytes = out.toByteArray();
                 Bitmap image = BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.length);
                 //Handle with your *image* data
-                FirebaseVisionFaceDetectorOptions detectorOptions = new FirebaseVisionFaceDetectorOptions
-                        .Builder()
-                        .enableTracking()
-                        .build();
-                FirebaseVisionFaceDetector faceDetector = FirebaseVision.getInstance().getVisionFaceDetector(detectorOptions);
+
 
             }
         });
