@@ -76,7 +76,7 @@ public class CameraActivity extends AppCompatActivity {
     private DisplayManager displayManager;
     private Snackbar snackbar;
     private List<String> nameList = new ArrayList<>();
-    private Button toggleButton;
+    private Button toggleButton, glowButton;
 
 
 
@@ -87,9 +87,10 @@ public class CameraActivity extends AppCompatActivity {
         //getWindow().setSharedElementsUseOverlay(false);
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_camera);
+        glowButton = findViewById(R.id.GlowButton);
         //iSConnected variable to check if glow is connected
         boolean isConnected = SplitUSBSerial.getInstance(this).isDeviceConnected();
-        SplitUSBSerial.getInstance(this).setConnectionCallback(new USBSerial2.ConnectionCallback() {
+        /*SplitUSBSerial.getInstance(this).setConnectionCallback(new USBSerial2.ConnectionCallback() {
             @Override
             public void onConnected() {
                 snackbar = Snackbar.make(findViewById(R.id.coordinatorLayout),"Glow is connected! Switching to Glow's interface", Snackbar.LENGTH_LONG);
@@ -99,6 +100,9 @@ public class CameraActivity extends AppCompatActivity {
                     @Override
                     public void run() {
                         //start glow camera activity
+                        if(faceNet != null){
+                            faceNet.close();
+                        }
                         Intent glowIntent = new Intent(CameraActivity.this, GlowCameraActivity.class);
                         startActivity(glowIntent);
                         finish();
@@ -116,8 +120,37 @@ public class CameraActivity extends AppCompatActivity {
             public void onError(int i) {
 
             }
+        });*/
+        glowButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if(isConnected){
+                    snackbar = Snackbar.make(findViewById(R.id.coordinatorLayout),"Glow is connected! Switching to Glow's interface", Snackbar.LENGTH_LONG);
+                    snackbar.show();
+                    //delay switching to a new activity for 2 sec to show snackbar to user
+                    new Handler(Looper.getMainLooper()).postDelayed(new Runnable() {
+                        @Override
+                        public void run() {
+                            //start glow camera activity
+                            if(faceNet != null){
+                                faceNet.close();
+                            }
+                            Intent glowIntent = new Intent(CameraActivity.this, GlowCameraActivity.class);
+                            startActivity(glowIntent);
+                            finish();
+                            //initVideo();
+                        }
+                    },2000);
+                }
+                else {
+                    snackbar = Snackbar.make(findViewById(R.id.coordinatorLayout),"Glow isn't connected! Please check USB connection!", Snackbar.LENGTH_LONG);
+                    snackbar.show();
+                }
+            }
         });
-        if (!isConnected) {
+
+
+        if(!isConnected) {
 
             snackbar = Snackbar.make(findViewById(R.id.coordinatorLayout),"Glow isn't connected! Using Device's camera. Please check USB connection!", Snackbar.LENGTH_LONG);
             snackbar.show();
@@ -140,8 +173,8 @@ public class CameraActivity extends AppCompatActivity {
                 }
             });
 
-        /*Populate the faceRecognitionList on startup from firestore
-        running fireStore request on a new thread*/
+            /*Populate the faceRecognitionList on startup from firestore
+            running fireStore request on a new thread*/
             new Thread(() -> {
                 db = FirebaseFirestore.getInstance();
                 db.collection(emailAddr).get().addOnCompleteListener(task -> {
@@ -156,6 +189,7 @@ public class CameraActivity extends AppCompatActivity {
                             }
                             FaceRecognition face = new FaceRecognition(Objects.requireNonNull(documentSnapshot.get("Name")).toString(), faceEmbeddings,  Objects.requireNonNull(documentSnapshot.get("Relationship")).toString());
                             faceRecognitionList.add(face);
+
                         }
                     }
                 });
@@ -238,13 +272,19 @@ public class CameraActivity extends AppCompatActivity {
     protected void onResume(){
         super.onResume();
         faceRecognitionList.clear();
+        if(faceNet == null){
+            try {
+                faceNet = new FaceNet(getAssets());
+            } catch (Exception e) {
+                Toast.makeText(CameraActivity.this, "Model not loaded successfully", Toast.LENGTH_SHORT).show();
+            }
+        }
         new Thread(() -> {
             db = FirebaseFirestore.getInstance();
             db.collection(emailAddr).get().addOnCompleteListener(task -> {
                 if (task.isSuccessful()) {
                     for (QueryDocumentSnapshot documentSnapshot : Objects.requireNonNull(task.getResult())) {
                         float[][] faceEmbeddings = new float[1][192];
-                        //List<Float> embeddings = (List<Float>) documentSnapshot.get("Embeddings");
                         List<Double> embeddings = (List<Double>) documentSnapshot.get("Embeddings");
                         for (int i = 0; i < 192; i++) {
                             assert embeddings != null;
@@ -488,12 +528,12 @@ public class CameraActivity extends AppCompatActivity {
     }
 
     private void signOut() {
-            FirebaseAuth.getInstance().signOut();
-            faceNet.close();
-            Toast.makeText(CameraActivity.this, "Signed out successfully", Toast.LENGTH_LONG).show();
-            Intent intent = new Intent(CameraActivity.this, LoginActivity.class);
-            startActivity(intent);
-            finish();
+        FirebaseAuth.getInstance().signOut();
+        faceNet.close();
+        Toast.makeText(CameraActivity.this, "Signed out successfully", Toast.LENGTH_LONG).show();
+        Intent intent = new Intent(CameraActivity.this, LoginActivity.class);
+        startActivity(intent);
+        finish();
 
     }
 }

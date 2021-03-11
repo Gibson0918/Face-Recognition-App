@@ -5,9 +5,9 @@ android {
     signingConfigs {
         Production {
             storeFile file('C:\\Users\\Gibson\\Documents\\GitHub\\CameraX_App\\Gibson_keystore_file.jks')
-            keyAlias 'Gibson_keystore'
-            keyPassword 'yppsosmall'
-            storePassword 'yppsosmall'
+            keyAlias 'key0'
+            keyPassword 'gibson'
+            storePassword 'gibson'
         }
     }
     compileSdkVersion 30
@@ -87,7 +87,8 @@ dependencies {
     implementation "androidx.camera:camera-camera2:${camerax_version}"
 
     // face detection using firebase
-    // mlkit version is weird
+    // (Yes, this library is outdated but MLkit was buggy when starting this project and it is working fine)
+    //noinspection OutdatedLibrary
     implementation 'com.google.firebase:firebase-ml-vision:24.0.3'
 
     //add for Google Analytics

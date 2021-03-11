@@ -1,39 +1,80 @@
 <?xml version="1.0" encoding="utf-8"?>
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/constraintLayout"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
- <com.madgaze.smartglass.view.SplitCameraView
+ <TextureView
+     android:id="@+id/textureView2"
      android:layout_width="match_parent"
      android:layout_height="match_parent"
+     app:layout_constraintBottom_toBottomOf="parent"
+     app:layout_constraintEnd_toEndOf="parent"
+     app:layout_constraintStart_toStartOf="parent"
+     app:layout_constraintTop_toTopOf="parent" />
+
+ <com.madgaze.smartglass.view.SplitCameraView
      android:id="@+id/splitCameraView"
-     android:layout_centerInParent="true"/>
+     android:layout_width="0dp"
+     android:layout_height="0dp"
+     app:layout_constraintBottom_toBottomOf="parent"
+     app:layout_constraintEnd_toEndOf="parent"
+     app:layout_constraintStart_toStartOf="parent"
+     app:layout_constraintTop_toTopOf="parent" />
 
 
- <LinearLayout
-     android:layout_width="match_parent"
+ <Button
+     android:id="@+id/cameraOnOffBtn"
+     android:layout_width="wrap_content"
      android:layout_height="wrap_content"
-     android:padding="15dp"
-     android:orientation="horizontal"
-     android:layout_alignParentBottom="true"
-     android:gravity="center_horizontal">
-  <Button
-      android:layout_width="wrap_content"
-      android:layout_height="wrap_content"
-      android:text="Start"
-      android:id="@+id/cameraOnOffBtn"/>
-  <Button
-      android:layout_width="wrap_content"
-      android:layout_height="wrap_content"
-      android:text="Take Picture"
-      android:id="@+id/takePictureBtn"/>
-  <Button
-      android:layout_width="wrap_content"
-      android:layout_height="wrap_content"
-      android:text="Start Video"
-      android:id="@+id/videoBtn"/>
+     android:layout_marginEnd="16dp"
+     android:text="Start"
+     app:layout_constraintBottom_toBottomOf="@+id/takePictureBtn"
+     app:layout_constraintEnd_toStartOf="@+id/takePictureBtn"
+     app:layout_constraintTop_toTopOf="@+id/takePictureBtn" />
 
- </LinearLayout>
+ <Button
+     android:id="@+id/takePictureBtn"
+     android:layout_width="wrap_content"
+     android:layout_height="wrap_content"
+     android:layout_marginBottom="16dp"
+     android:text="Take Picture"
+     app:layout_constraintBottom_toBottomOf="parent"
+     app:layout_constraintEnd_toEndOf="@+id/splitCameraView"
+     app:layout_constraintStart_toStartOf="@+id/splitCameraView" />
+
+ <Button
+     android:id="@+id/videoBtn"
+     android:layout_width="wrap_content"
+     android:layout_height="wrap_content"
+     android:layout_marginStart="16dp"
+     android:text="Start Video"
+     app:layout_constraintStart_toEndOf="@+id/takePictureBtn"
+     app:layout_constraintTop_toTopOf="@+id/takePictureBtn" />
+
+ <ImageView
+     android:id="@+id/imageView2"
+     android:layout_width="134dp"
+     android:layout_height="91dp"
+     android:layout_marginStart="24dp"
+     android:layout_marginBottom="16dp"
+     app:layout_constraintBottom_toBottomOf="parent"
+     app:layout_constraintStart_toStartOf="parent"
+     tools:srcCompat="@tools:sample/avatars" />
+
+ <Button
+     android:id="@+id/offGlowButton"
+     style="@style/Widget.App.Button.OutlinedButton.IconOnly"
+     android:layout_width="wrap_content"
+     android:layout_height="wrap_content"
+     android:layout_marginTop="4dp"
+     android:layout_marginEnd="4dp"
+     android:background="#80FFFFFF"
+     app:icon="@drawable/ic_power_button__1_"
+     app:layout_constraintEnd_toEndOf="parent"
+     app:layout_constraintTop_toTopOf="parent" />
 
 
-</RelativeLayout>
+</androidx.constraintlayout.widget.ConstraintLayout>
