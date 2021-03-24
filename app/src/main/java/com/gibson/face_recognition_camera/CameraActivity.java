@@ -88,43 +88,13 @@ public class CameraActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_camera);
         glowButton = findViewById(R.id.GlowButton);
-        //iSConnected variable to check if glow is connected
-        boolean isConnected = SplitUSBSerial.getInstance(this).isDeviceConnected();
-        /*SplitUSBSerial.getInstance(this).setConnectionCallback(new USBSerial2.ConnectionCallback() {
-            @Override
-            public void onConnected() {
-                snackbar = Snackbar.make(findViewById(R.id.coordinatorLayout),"Glow is connected! Switching to Glow's interface", Snackbar.LENGTH_LONG);
-                snackbar.show();
-                //delay switching to a new activity for 2 sec to show snackbar to user
-                new Handler(Looper.getMainLooper()).postDelayed(new Runnable() {
-                    @Override
-                    public void run() {
-                        //start glow camera activity
-                        if(faceNet != null){
-                            faceNet.close();
-                        }
-                        Intent glowIntent = new Intent(CameraActivity.this, GlowCameraActivity.class);
-                        startActivity(glowIntent);
-                        finish();
-                        //initVideo();
-                    }
-                },2000);
-            }
 
-            @Override
-            public void onDisconnected() {
 
-            }
-
-            @Override
-            public void onError(int i) {
-
-            }
-        });*/
         glowButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if(isConnected){
+                if(SplitUSBSerial.getInstance(CameraActivity.this).isDeviceConnected()){
+                    CameraX.unbindAll();
                     snackbar = Snackbar.make(findViewById(R.id.coordinatorLayout),"Glow is connected! Switching to Glow's interface", Snackbar.LENGTH_LONG);
                     snackbar.show();
                     //delay switching to a new activity for 2 sec to show snackbar to user
@@ -149,117 +119,111 @@ public class CameraActivity extends AppCompatActivity {
             }
         });
 
+        bindDisplayItem();
+        loadAnimation();
 
-        if(!isConnected) {
+        menuFab.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                setVisibilityFab(clicked);
+                setAnimation(clicked);
+                setClickableFab(clicked);
+                showHelperText(clicked);
+                showHelperTextAnimation(clicked);
+                if (!clicked) {
+                    clicked = true;
+                } else {
+                    clicked = false;
+                }
+            }
+        });
 
-            snackbar = Snackbar.make(findViewById(R.id.coordinatorLayout),"Glow isn't connected! Using Device's camera. Please check USB connection!", Snackbar.LENGTH_LONG);
-            snackbar.show();
-            bindDisplayItem();
-            loadAnimation();
+        /*Populate the faceRecognitionList on startup from firestore
+        running fireStore request on a new thread*/
+        new Thread(() -> {
+            db = FirebaseFirestore.getInstance();
+            db.collection(emailAddr).get().addOnCompleteListener(task -> {
+                if (task.isSuccessful()) {
+                    for (QueryDocumentSnapshot documentSnapshot : Objects.requireNonNull(task.getResult())) {
+                        float[][] faceEmbeddings = new float[1][192];
+                        //List<Float> embeddings = (List<Float>) documentSnapshot.get("Embeddings");
+                        List<Double> embeddings = (List<Double>) documentSnapshot.get("Embeddings");
+                        for (int i = 0; i < 192; i++) {
+                            assert embeddings != null;
+                            faceEmbeddings[0][i] = embeddings.get(i).floatValue();
+                        }
+                        FaceRecognition face = new FaceRecognition(Objects.requireNonNull(documentSnapshot.get("Name")).toString(), faceEmbeddings,  Objects.requireNonNull(documentSnapshot.get("Relationship")).toString());
+                        faceRecognitionList.add(face);
 
-            menuFab.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View view) {
-                    setVisibilityFab(clicked);
-                    setAnimation(clicked);
-                    setClickableFab(clicked);
-                    showHelperText(clicked);
-                    showHelperTextAnimation(clicked);
-                    if (!clicked) {
-                        clicked = true;
-                    } else {
-                        clicked = false;
                     }
                 }
             });
+        }).start();
 
-            /*Populate the faceRecognitionList on startup from firestore
-            running fireStore request on a new thread*/
+        // <<Load the facial recognition model  >>
+        faceNet = null;
+        try {
+            faceNet = new FaceNet(getAssets());
+        } catch (Exception e) {
+            Toast.makeText(CameraActivity.this, "Model not loaded successfully", Toast.LENGTH_SHORT).show();
+        }
+
+        //check permission for camera
+        if (allPermissionsGranted()) {
+            textureView.post(this::startCamera); //start camera if permission has been granted by user
+        } else {
+            ActivityCompat.requestPermissions(this, REQUIRED_PERMISSIONS, REQUEST_CODE_PERMISSIONS);
+        }
+
+        searchFab.setOnClickListener(v -> {
+            PackageManager pm = CameraActivity.this.getPackageManager();
+            boolean isInstalled = isPackageInstalled(pm);
+            if (isInstalled) {
+                //Toast.makeText(CameraActivity.this, "Google lens already installed", Toast.LENGTH_SHORT).show();
+                Intent launchGL = getPackageManager().getLaunchIntentForPackage("com.google.ar.lens");
+                if (launchGL != null) {
+                    startActivity(launchGL);
+                }
+            } else {
+                try {
+                    Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id=com.google.ar.lens"));
+                    startActivity(intent);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        });
+
+        editFab.setOnClickListener(v -> {
+            Snackbar.make(findViewById(R.id.coordinatorLayout), "Retrieving data, please hold on!", Snackbar.LENGTH_LONG).show();
+            Intent intent = new Intent(CameraActivity.this, AlbumActivity.class);
             new Thread(() -> {
                 db = FirebaseFirestore.getInstance();
                 db.collection(emailAddr).get().addOnCompleteListener(task -> {
                     if (task.isSuccessful()) {
                         for (QueryDocumentSnapshot documentSnapshot : Objects.requireNonNull(task.getResult())) {
-                            float[][] faceEmbeddings = new float[1][192];
-                            //List<Float> embeddings = (List<Float>) documentSnapshot.get("Embeddings");
-                            List<Double> embeddings = (List<Double>) documentSnapshot.get("Embeddings");
-                            for (int i = 0; i < 192; i++) {
-                                assert embeddings != null;
-                                faceEmbeddings[0][i] = embeddings.get(i).floatValue();
+                            if(nameList.contains(Objects.requireNonNull(documentSnapshot.get("Name")).toString())){
+                                continue;
                             }
-                            FaceRecognition face = new FaceRecognition(Objects.requireNonNull(documentSnapshot.get("Name")).toString(), faceEmbeddings,  Objects.requireNonNull(documentSnapshot.get("Relationship")).toString());
-                            faceRecognitionList.add(face);
-
+                            else {
+                                nameList.add(Objects.requireNonNull(documentSnapshot.get("Name")).toString());
+                            }
                         }
+                        nameList.remove("Show All");
+                        nameList.sort(String::compareToIgnoreCase);
+                        nameList.add(0,"Show All");
+
+                        //ActivityOptions options = ActivityOptions.makeSceneTransitionAnimation(CameraActivity.this, editFab, editFab.getTransitionName());
+                        intent.putStringArrayListExtra("nameList", (ArrayList<String>) nameList);
+                        startActivity(intent);
                     }
                 });
             }).start();
+        });
 
-            // <<Load the facial recognition model  >>
-            faceNet = null;
-            try {
-                faceNet = new FaceNet(getAssets());
-            } catch (Exception e) {
-                Toast.makeText(CameraActivity.this, "Model not loaded successfully", Toast.LENGTH_SHORT).show();
-            }
-
-            //check permission for camera
-            if (allPermissionsGranted()) {
-                textureView.post(this::startCamera); //start camera if permission has been granted by user
-            } else {
-                ActivityCompat.requestPermissions(this, REQUIRED_PERMISSIONS, REQUEST_CODE_PERMISSIONS);
-            }
-
-            searchFab.setOnClickListener(v -> {
-                PackageManager pm = CameraActivity.this.getPackageManager();
-                boolean isInstalled = isPackageInstalled(pm);
-                if (isInstalled) {
-                    //Toast.makeText(CameraActivity.this, "Google lens already installed", Toast.LENGTH_SHORT).show();
-                    Intent launchGL = getPackageManager().getLaunchIntentForPackage("com.google.ar.lens");
-                    if (launchGL != null) {
-                        startActivity(launchGL);
-                    }
-                } else {
-                    try {
-                        Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id=com.google.ar.lens"));
-                        startActivity(intent);
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                    }
-                }
-            });
-
-            editFab.setOnClickListener(v -> {
-                Snackbar.make(findViewById(R.id.coordinatorLayout), "Retrieving data, please hold on!", Snackbar.LENGTH_LONG).show();
-                Intent intent = new Intent(CameraActivity.this, AlbumActivity.class);
-                new Thread(() -> {
-                    db = FirebaseFirestore.getInstance();
-                    db.collection(emailAddr).get().addOnCompleteListener(task -> {
-                        if (task.isSuccessful()) {
-                            for (QueryDocumentSnapshot documentSnapshot : Objects.requireNonNull(task.getResult())) {
-                                if(nameList.contains(Objects.requireNonNull(documentSnapshot.get("Name")).toString())){
-                                    continue;
-                                }
-                                else {
-                                    nameList.add(Objects.requireNonNull(documentSnapshot.get("Name")).toString());
-                                }
-                            }
-                            nameList.remove("Show All");
-                            nameList.sort(String::compareToIgnoreCase);
-                            nameList.add(0,"Show All");
-
-                            //ActivityOptions options = ActivityOptions.makeSceneTransitionAnimation(CameraActivity.this, editFab, editFab.getTransitionName());
-                            intent.putStringArrayListExtra("nameList", (ArrayList<String>) nameList);
-                            startActivity(intent);
-                        }
-                    });
-                }).start();
-            });
-
-            sign_out_fab.setOnClickListener(view -> {
-                signOut();
-            });
-        }
+        sign_out_fab.setOnClickListener(view -> {
+            signOut();
+        });
     }
 
     @Override

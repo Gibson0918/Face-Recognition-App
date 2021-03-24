@@ -67,11 +67,10 @@ public class GlowCameraActivity extends AppCompatActivity {
     SplitCameraView mSplitCameraView;
     String[] RequiredPermissions = new String[]{ Manifest.permission.RECORD_AUDIO, Manifest.permission.WRITE_EXTERNAL_STORAGE};
     FirebaseVisionFaceDetector faceDetector;
-    ImageView imageView;
     FirebaseVisionImage firebaseVisionImage;
     boolean unset;
 
-    private TextureView textureView;
+    private ImageView rectOverlay;
     private Bitmap abitmap;
     private Canvas canvas;
     private float widthScaleFactor = 1.0f;
@@ -87,6 +86,8 @@ public class GlowCameraActivity extends AppCompatActivity {
     private FirebaseAuth mAuth;
     private FirebaseUser currentUser;
     private Button offButton;
+    private int width, height;
+    private FirebaseVisionImageMetadata firebaseVisionImageMetadata;
 
 
 
@@ -95,8 +96,8 @@ public class GlowCameraActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_glow_camera);
         unset = false;
-        textureView = findViewById(R.id.textureView2);
-        textureView.post(new Runnable() {
+        rectOverlay = findViewById(R.id.rectOverlay);
+        rectOverlay.post(new Runnable() {
             @Override
             public void run() {
                 initDrawingUtils();
@@ -108,7 +109,7 @@ public class GlowCameraActivity extends AppCompatActivity {
         assert currentUser != null;
         emailAddr = currentUser.getEmail();
         mSplitCameraView = (SplitCameraView) findViewById(R.id.splitCameraView);
-        imageView = findViewById(R.id.imageView2);
+
         offButton = findViewById(R.id.offGlowButton);
         offButton.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -217,7 +218,7 @@ public class GlowCameraActivity extends AppCompatActivity {
     }
 
 
-    public void setVideo(FirebaseVisionFaceDetector faceDetector){
+    public synchronized void setVideo(FirebaseVisionFaceDetector faceDetector){
         SplitCamera.getInstance(this).setFrameFormat(CameraHelper.FRAME_FORMAT_MJPEG);
         SplitCamera.getInstance(this).setPreviewSize(SplitCamera.CameraDimension.DIMENSION_1920_1080);
         SplitCamera.getInstance(this).start(findViewById(R.id.splitCameraView));
@@ -227,6 +228,14 @@ public class GlowCameraActivity extends AppCompatActivity {
             @Override
             public void onConnected() {
                 SplitCamera.getInstance(GlowCameraActivity.this).startPreview();
+                width = SplitCamera.getInstance(GlowCameraActivity.this).getPreviewWidth();
+                height = SplitCamera.getInstance(GlowCameraActivity.this).getPreviewHeight();
+                firebaseVisionImageMetadata = new FirebaseVisionImageMetadata.Builder()
+                        .setWidth(width)   // 480x360 is typically sufficient for
+                        .setHeight(height)  // image recognition
+                        .setFormat(FirebaseVisionImageMetadata.IMAGE_FORMAT_NV21)
+                        .setRotation(FirebaseVisionImageMetadata.ROTATION_0)
+                        .build();
                 MDToast.makeText(GlowCameraActivity.this, "Camera connected", MDToast.LENGTH_SHORT, MDToast.TYPE_SUCCESS).show();
                 updateUI(true);
             }
@@ -251,40 +260,21 @@ public class GlowCameraActivity extends AppCompatActivity {
         SplitCamera.getInstance(this).setOnPreviewFrameListener(new AbstractUVCCameraHandler.OnPreViewResultListener() {
             @Override
             public void onPreviewResult(byte[] bytes) {
-
-                int width = SplitCamera.getInstance(GlowCameraActivity.this).getPreviewWidth();
-                int height = SplitCamera.getInstance(GlowCameraActivity.this).getPreviewHeight();
-
-                ByteArrayOutputStream out = new ByteArrayOutputStream();
-                YuvImage yuvImage = new YuvImage(bytes, ImageFormat.NV21, width, height, null);
-                yuvImage.compressToJpeg(new Rect(0, 0, width, height), 100, out);
-                byte[] imageBytes = out.toByteArray();
-                Bitmap image = BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.length);
-                //Handle with your *image* data
-                FirebaseVisionImageMetadata metadata = new FirebaseVisionImageMetadata.Builder()
-                        .setWidth(480)   // 480x360 is typically sufficient for
-                        .setHeight(360)  // image recognition
-                        .setFormat(FirebaseVisionImageMetadata.IMAGE_FORMAT_NV21)
-                        .setRotation(FirebaseVisionImageMetadata.ROTATION_0)
-                        .build();
-                firebaseVisionImage = FirebaseVisionImage.fromByteArray(bytes,metadata);
-                if(!unset){
-                    widthScaleFactor = canvas.getWidth() / (firebaseVisionImage.getBitmap().getWidth() * 1.0f);
-                    heightScaleFactor = canvas.getHeight() / (firebaseVisionImage.getBitmap().getHeight() * 1.0f);
-                    unset = true;
-                }
-
+                widthScaleFactor = canvas.getWidth() / (width * 1.0f);
+                heightScaleFactor = canvas.getHeight() / (height * 1.0f);
+                firebaseVisionImage = FirebaseVisionImage.fromByteArray(bytes,firebaseVisionImageMetadata);
                 faceDetector.detectInImage(firebaseVisionImage).addOnSuccessListener(new OnSuccessListener<List<FirebaseVisionFace>>() {
                     @Override
                     public void onSuccess(List<FirebaseVisionFace> firebaseVisionFaces) {
-                        for(FirebaseVisionFace face : firebaseVisionFaces){
+                        if(!firebaseVisionFaces.isEmpty()) {
+
                             new Thread(()->{
                                 try {
                                     processFaces(firebaseVisionFaces);
                                     runOnUiThread(new Runnable() {
                                         @Override
                                         public void run() {
-                                            Glide.with(imageView.getContext()).load(image).thumbnail(0.6f).centerCrop().into(imageView);
+                                            rectOverlay.setImageBitmap(abitmap);
                                         }
                                     });
                                 } catch (ExecutionException e) {
@@ -294,36 +284,16 @@ public class GlowCameraActivity extends AppCompatActivity {
                                 }
                             }).start();
 
+
+
+                        }
+                        else {
+                            canvas.drawColor(Color.TRANSPARENT, PorterDuff.Mode.MULTIPLY);
                         }
                     }
                 });
-            }
-        });
-
-        /* Insert code segment below if you want to record the video */
-        SplitCamera.getInstance(this).setRecordVideoCallback(new RecordVideoCallback() {
-            @Override
-            public void onVideoSaved(String path) {
-                MDToast.makeText(GlowCameraActivity.this, "Video saved success in (" + path + ")", MDToast.LENGTH_SHORT, MDToast.TYPE_SUCCESS).show();
-                runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        ((Button)findViewById(R.id.videoBtn)).setText("START");
-                        ((findViewById(R.id.videoBtn))).setEnabled(true);
-                    }
-                });
-            }
-
-            @Override
-            public void onError(int code) {
-                MDToast.makeText(GlowCameraActivity.this, "Video saved (Error=" + code +")", MDToast.LENGTH_SHORT, MDToast.TYPE_ERROR).show();
-                runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        ((Button)findViewById(R.id.videoBtn)).setText("START");
-                        ((findViewById(R.id.videoBtn))).setEnabled(true);
-                    }
-                });
+                //canvas.drawColor(Color.TRANSPARENT, PorterDuff.Mode.MULTIPLY);
+                canvas.drawColor(Color.TRANSPARENT, PorterDuff.Mode.CLEAR);
             }
         });
     }
@@ -342,6 +312,7 @@ public class GlowCameraActivity extends AppCompatActivity {
         int count =0;
         //canvas.drawColor(Color.TRANSPARENT, PorterDuff.Mode.CLEAR);
         for (int i =0; i<faces.size(); i++) {
+            Log.d("Drawing rect process", "Drawed rect process");
             Bitmap croppedFaceBitmap = getFaceBitmap(faces.get(i));
             if (croppedFaceBitmap == null) {
                 return null;
@@ -386,8 +357,7 @@ public class GlowCameraActivity extends AppCompatActivity {
 
     private void initDrawingUtils() {
         new Thread(() -> {
-            //abitmap = Bitmap.createBitmap(textureView.getWidth(), textureView.getHeight(), Bitmap.Config.ARGB_8888);
-            abitmap = Bitmap.createBitmap(SplitCamera.getInstance(GlowCameraActivity.this).getPreviewWidth(), SplitCamera.getInstance(GlowCameraActivity.this).getPreviewHeight(), Bitmap.Config.ARGB_8888);
+            abitmap = Bitmap.createBitmap(rectOverlay.getWidth(), rectOverlay.getHeight(), Bitmap.Config.ARGB_8888);
             canvas = new Canvas(abitmap);
             paint = new Paint();
             paint.setColor(Color.BLUE);

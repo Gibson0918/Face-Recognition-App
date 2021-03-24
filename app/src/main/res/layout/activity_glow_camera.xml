@@ -6,15 +6,6 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
- <TextureView
-     android:id="@+id/textureView2"
-     android:layout_width="match_parent"
-     android:layout_height="match_parent"
-     app:layout_constraintBottom_toBottomOf="parent"
-     app:layout_constraintEnd_toEndOf="parent"
-     app:layout_constraintStart_toStartOf="parent"
-     app:layout_constraintTop_toTopOf="parent" />
-
  <com.madgaze.smartglass.view.SplitCameraView
      android:id="@+id/splitCameraView"
      android:layout_width="0dp"
@@ -24,6 +15,15 @@
      app:layout_constraintStart_toStartOf="parent"
      app:layout_constraintTop_toTopOf="parent" />
 
+
+ <ImageView
+     android:id="@+id/rectOverlay"
+     android:layout_width="0dp"
+     android:layout_height="0dp"
+     app:layout_constraintBottom_toBottomOf="parent"
+     app:layout_constraintEnd_toEndOf="parent"
+     app:layout_constraintStart_toStartOf="parent"
+     app:layout_constraintTop_toTopOf="parent" />
 
  <Button
      android:id="@+id/cameraOnOffBtn"

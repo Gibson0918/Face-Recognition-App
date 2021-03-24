@@ -15,6 +15,22 @@
       },
       "oauth_client": [
         {
+          "client_id": "712637543347-2cb78tpkhcd3sci2o2l8d44la84khgn7.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.gibson.face_recognition_camera",
+            "certificate_hash": "71f02b1d9b34a581b870a7ea7c9ad0112c07a1f1"
+          }
+        },
+        {
+          "client_id": "712637543347-5aaujags2i4ibqgteulm794v3f1phe5k.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.gibson.face_recognition_camera",
+            "certificate_hash": "d636d8d37fafab5007ff0c4809d4fefd05b16dd6"
+          }
+        },
+        {
           "client_id": "712637543347-joniurbk0dtlb2kev5ksrdrp9q160k3j.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
@@ -28,6 +44,14 @@
           "android_info": {
             "package_name": "com.gibson.face_recognition_camera",
             "certificate_hash": "1295ff5de1dd030fb75c039f9a907c5e749290ac"
+          }
+        },
+        {
+          "client_id": "712637543347-mhm5ju5sj33aovfpuon8k19mn2kijmen.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.gibson.face_recognition_camera",
+            "certificate_hash": "05faa524cda5e0e97bb23903dd5cedae983a7d9c"
           }
         }
       ],
