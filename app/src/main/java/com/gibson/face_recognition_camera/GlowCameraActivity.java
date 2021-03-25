@@ -149,8 +149,8 @@ public class GlowCameraActivity extends AppCompatActivity {
         init();
     }
 
-    public void init(){
-        setViews();
+    public synchronized void init(){
+
         FirebaseVisionFaceDetectorOptions detectorOptions = new FirebaseVisionFaceDetectorOptions
                 .Builder()
                 .enableTracking()
@@ -191,36 +191,12 @@ public class GlowCameraActivity extends AppCompatActivity {
     }
 
 
-    public void setViews(){
-        View.OnClickListener listener = new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                switch(view.getId()){
-                    case R.id.cameraOnOffBtn:
-                        toggleCameraOnOffBtn();
-                        break;
-                    case R.id.takePictureBtn:
-                        findViewById(R.id.takePictureBtn).setEnabled(false);
-                        takePicture();
-                        break;
-                    case R.id.videoBtn:
-                        findViewById(R.id.videoBtn).setEnabled(false);
-                        toogleVideoBtn();
-                        break;
-                }
-            }
-        };
-
-        (findViewById(R.id.cameraOnOffBtn)).setOnClickListener(listener);
-        (findViewById(R.id.takePictureBtn)).setOnClickListener(listener);
-        (findViewById(R.id.takePictureBtn)).setEnabled(false);
-        (findViewById(R.id.videoBtn)).setEnabled(false);
-    }
 
 
-    public synchronized void setVideo(FirebaseVisionFaceDetector faceDetector){
+
+    public void setVideo(FirebaseVisionFaceDetector faceDetector){
         SplitCamera.getInstance(this).setFrameFormat(CameraHelper.FRAME_FORMAT_MJPEG);
-        SplitCamera.getInstance(this).setPreviewSize(SplitCamera.CameraDimension.DIMENSION_1920_1080);
+        SplitCamera.getInstance(this).setPreviewSize(SplitCamera.CameraDimension.DIMENSION_1280_720);
         SplitCamera.getInstance(this).start(findViewById(R.id.splitCameraView));
 
         /* Insert code segment below if you want to monitor the USB Camera connection status */
@@ -237,13 +213,13 @@ public class GlowCameraActivity extends AppCompatActivity {
                         .setRotation(FirebaseVisionImageMetadata.ROTATION_0)
                         .build();
                 MDToast.makeText(GlowCameraActivity.this, "Camera connected", MDToast.LENGTH_SHORT, MDToast.TYPE_SUCCESS).show();
-                updateUI(true);
+
             }
 
             @Override
             public void onDisconnected() {
                 MDToast.makeText(GlowCameraActivity.this, "Camera disconnected", MDToast.LENGTH_SHORT, MDToast.TYPE_INFO).show();
-                updateUI(false);
+
             }
 
             @Override
@@ -252,48 +228,52 @@ public class GlowCameraActivity extends AppCompatActivity {
                     MDToast.makeText(GlowCameraActivity.this, "There is no connecting MAD Gaze Cameras.", MDToast.LENGTH_SHORT, MDToast.TYPE_ERROR).show();
                 else
                     MDToast.makeText(GlowCameraActivity.this, "MAD Gaze Camera Init Failure (Error=" + code + ")", MDToast.LENGTH_SHORT, MDToast.TYPE_ERROR).show();
-                updateUI(false);
+
             }
         });
 
         /* Insert code segment below if you want to retrieve the video frames in nv21 format */
         SplitCamera.getInstance(this).setOnPreviewFrameListener(new AbstractUVCCameraHandler.OnPreViewResultListener() {
             @Override
-            public void onPreviewResult(byte[] bytes) {
-                widthScaleFactor = canvas.getWidth() / (width * 1.0f);
-                heightScaleFactor = canvas.getHeight() / (height * 1.0f);
-                firebaseVisionImage = FirebaseVisionImage.fromByteArray(bytes,firebaseVisionImageMetadata);
-                faceDetector.detectInImage(firebaseVisionImage).addOnSuccessListener(new OnSuccessListener<List<FirebaseVisionFace>>() {
-                    @Override
-                    public void onSuccess(List<FirebaseVisionFace> firebaseVisionFaces) {
-                        if(!firebaseVisionFaces.isEmpty()) {
+            public synchronized void onPreviewResult(byte[] bytes) {
 
-                            new Thread(()->{
-                                try {
-                                    processFaces(firebaseVisionFaces);
-                                    runOnUiThread(new Runnable() {
-                                        @Override
-                                        public void run() {
-                                            rectOverlay.setImageBitmap(abitmap);
-                                        }
-                                    });
-                                } catch (ExecutionException e) {
-                                    e.printStackTrace();
-                                } catch (InterruptedException e) {
-                                    e.printStackTrace();
-                                }
-                            }).start();
+                    widthScaleFactor = canvas.getWidth() / (width * 1.0f);
+                    heightScaleFactor = canvas.getHeight() / (height * 1.0f);
+                    firebaseVisionImage = FirebaseVisionImage.fromByteArray(bytes,firebaseVisionImageMetadata);
+                    faceDetector.detectInImage(firebaseVisionImage).addOnSuccessListener(new OnSuccessListener<List<FirebaseVisionFace>>() {
+                        @Override
+                        public void onSuccess(List<FirebaseVisionFace> firebaseVisionFaces) {
+                            if(!firebaseVisionFaces.isEmpty()) {
 
+                                new Thread(()->{
+                                    try {
+                                        processFaces(firebaseVisionFaces);
+                                        runOnUiThread(new Runnable() {
+                                            @Override
+                                            public synchronized void run() {
+                                                rectOverlay.setImageBitmap(abitmap);
+                                            }
+                                        });
+                                    } catch (ExecutionException e) {
+                                        e.printStackTrace();
+                                    } catch (InterruptedException e) {
+                                        e.printStackTrace();
+                                    }
+                                }).start();
 
-
+                            }
+                            else {
+                                runOnUiThread(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        canvas.drawColor(Color.TRANSPARENT, PorterDuff.Mode.MULTIPLY);
+                                    }
+                                });
+                                //canvas.drawColor(Color.TRANSPARENT, PorterDuff.Mode.MULTIPLY);
+                            }
                         }
-                        else {
-                            canvas.drawColor(Color.TRANSPARENT, PorterDuff.Mode.MULTIPLY);
-                        }
-                    }
-                });
-                //canvas.drawColor(Color.TRANSPARENT, PorterDuff.Mode.MULTIPLY);
-                canvas.drawColor(Color.TRANSPARENT, PorterDuff.Mode.CLEAR);
+                    });
+                canvas.drawColor(Color.TRANSPARENT, PorterDuff.Mode.MULTIPLY);
             }
         });
     }
@@ -309,7 +289,6 @@ public class GlowCameraActivity extends AppCompatActivity {
     }
 
     private synchronized Bitmap processFaces(List<FirebaseVisionFace> faces) throws ExecutionException, InterruptedException {
-        int count =0;
         //canvas.drawColor(Color.TRANSPARENT, PorterDuff.Mode.CLEAR);
         for (int i =0; i<faces.size(); i++) {
             Log.d("Drawing rect process", "Drawed rect process");
@@ -318,7 +297,7 @@ public class GlowCameraActivity extends AppCompatActivity {
                 return null;
             }
             else {
-                if(count <=4){
+                if(i <=4){
                     Future<FaceRecognition> faceRecognitionFutureTask = faceNet.recognizeFace(croppedFaceBitmap, faceRecognitionList);
                     FaceRecognition recognizeFace = faceRecognitionFutureTask.get();
                     textPaint.getTextBounds(recognizeFace.getName(),0,recognizeFace.getName().length(),bounds);
@@ -339,10 +318,8 @@ public class GlowCameraActivity extends AppCompatActivity {
                             (int) translateX(faces.get(i).getBoundingBox().right),
                             (int) translateY(faces.get(i).getBoundingBox().bottom));
                     canvas.drawRect(box, paint);
-                    count+=1;
                 }
             }
-
         }
         return abitmap;
     }
@@ -382,8 +359,7 @@ public class GlowCameraActivity extends AppCompatActivity {
         }).start();
     }
 
-    private Bitmap getFaceBitmap(FirebaseVisionFace face) {
-
+    private synchronized Bitmap getFaceBitmap(FirebaseVisionFace face) {
         Bitmap originalFrame = firebaseVisionImage.getBitmap();
         Bitmap faceBitmap = null;
         try {
@@ -396,63 +372,13 @@ public class GlowCameraActivity extends AppCompatActivity {
 
 
 
-    public void toggleCameraOnOffBtn(){
-        if (!permissionReady()) return;
-        if (SplitCamera.getInstance(GlowCameraActivity.this).isPreviewStarted()) {
-            updateUI(false);
-            SplitCamera.getInstance(GlowCameraActivity.this).stopPreview();
-        } else {
-            updateUI(true);
-            SplitCamera.getInstance(GlowCameraActivity.this).startPreview();
-        }
-    }
 
-    public void toogleVideoBtn(){
-        if (!permissionReady()) return;
-        if (SplitCamera.getInstance(this).isRecording()) {
-            MDToast.makeText(this, "Stop Recording", MDToast.LENGTH_SHORT, MDToast.TYPE_INFO).show();
-            SplitCamera.getInstance(this).stopRecording();
 
-        } else {
-            MDToast.makeText(this, "Start Recording", MDToast.LENGTH_SHORT, MDToast.TYPE_INFO).show();
-            SplitCamera.getInstance(this).startRecording();
-            ((Button)(findViewById(R.id.videoBtn))).setText("STOP VIDEO");
-            ((findViewById(R.id.videoBtn))).setEnabled(true);
 
-        }
-    }
 
-    public void takePicture() {
-        if (!permissionReady()) return;
-        SplitCamera.getInstance(this).takePicture(new TakePictureCallback() {
-            @Override
-            public void onImageSaved(String path) {
-                MDToast.makeText(GlowCameraActivity.this, "Image saved success in (" + path + ")", MDToast.LENGTH_SHORT, MDToast.TYPE_SUCCESS).show();
-                ((findViewById(R.id.takePictureBtn))).setEnabled(true);
-            }
 
-            @Override
-            public void onError(int code) {
-                MDToast.makeText(GlowCameraActivity.this, "Image saved failure (Error="+code+")", MDToast.LENGTH_SHORT, MDToast.TYPE_SUCCESS).show();
-                ((findViewById(R.id.takePictureBtn))).setEnabled(true);
-            }
-        });
-    }
 
-    public void updateUI(boolean on){
-        if (on){
-            (findViewById(R.id.cameraOnOffBtn)).setEnabled(true);
-            ((Button)findViewById(R.id.cameraOnOffBtn)).setText("STOP");
-            (findViewById(R.id.videoBtn)).setEnabled(true);
-            (findViewById(R.id.takePictureBtn)).setEnabled(true);
 
-        } else {
-            (findViewById(R.id.cameraOnOffBtn)).setEnabled(true);
-            ((Button)findViewById(R.id.cameraOnOffBtn)).setText("START");
-            (findViewById(R.id.videoBtn)).setEnabled(false);
-            (findViewById(R.id.takePictureBtn)).setEnabled(false);
-        }
-    }
 
     @Override
     protected void onDestroy() {
