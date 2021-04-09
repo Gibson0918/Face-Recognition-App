@@ -1,6 +1,7 @@
 package com.gibson.face_recognition_camera;
 
 import androidx.annotation.NonNull;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 
 import androidx.camera.camera2.Camera2Config;
@@ -13,12 +14,11 @@ import androidx.camera.core.ImageAnalysisConfig;
 import androidx.camera.core.Preview;
 import androidx.camera.core.PreviewConfig;
 
-
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
 import android.annotation.SuppressLint;
-import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.hardware.display.DisplayManager;
@@ -27,30 +27,30 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.util.Size;
-import android.view.Display;
 import android.view.TextureView;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.Window;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
 import android.widget.Button;
 import android.widget.ImageView;
-import android.widget.TextView;
 import android.widget.Toast;
 
+import com.google.android.gms.tasks.OnCompleteListener;
+import com.google.android.gms.tasks.Task;
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
+import com.google.android.material.dialog.MaterialDialogs;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.snackbar.Snackbar;
 import com.google.android.material.textview.MaterialTextView;
-import com.google.android.material.transition.platform.MaterialContainerTransformSharedElementCallback;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.firestore.CollectionReference;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
+import com.google.firebase.firestore.QuerySnapshot;
 import com.madgaze.smartglass.otg.sensor.SplitUSBSerial;
-import com.madgaze.smartglass.otg.sensor.USBSerial2;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -77,8 +77,7 @@ public class CameraActivity extends AppCompatActivity {
     private Snackbar snackbar;
     private List<String> nameList = new ArrayList<>();
     private Button toggleButton, glowButton;
-
-
+    private Base64ImageDB database;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -87,9 +86,8 @@ public class CameraActivity extends AppCompatActivity {
         //getWindow().setSharedElementsUseOverlay(false);
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_camera);
+        database = Base64ImageDB.getInstance(getApplicationContext());
         glowButton = findViewById(R.id.GlowButton);
-
-
         glowButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -146,7 +144,6 @@ public class CameraActivity extends AppCompatActivity {
                 if (task.isSuccessful()) {
                     for (QueryDocumentSnapshot documentSnapshot : Objects.requireNonNull(task.getResult())) {
                         float[][] faceEmbeddings = new float[1][192];
-                        //List<Float> embeddings = (List<Float>) documentSnapshot.get("Embeddings");
                         List<Double> embeddings = (List<Double>) documentSnapshot.get("Embeddings");
                         for (int i = 0; i < 192; i++) {
                             assert embeddings != null;
@@ -154,7 +151,6 @@ public class CameraActivity extends AppCompatActivity {
                         }
                         FaceRecognition face = new FaceRecognition(Objects.requireNonNull(documentSnapshot.get("Name")).toString(), faceEmbeddings,  Objects.requireNonNull(documentSnapshot.get("Relationship")).toString());
                         faceRecognitionList.add(face);
-
                     }
                 }
             });
@@ -222,7 +218,36 @@ public class CameraActivity extends AppCompatActivity {
         });
 
         sign_out_fab.setOnClickListener(view -> {
-            signOut();
+            MaterialAlertDialogBuilder builder = new MaterialAlertDialogBuilder(CameraActivity.this);
+            builder.setTitle("Warning!");
+            builder.setIcon(R.drawable.ic_baseline_warning_24);
+            builder.setMessage("Upon signing out, all data will be lost!");
+            builder.setPositiveButton("Continue", new DialogInterface.OnClickListener() {
+                @Override
+                public void onClick(DialogInterface dialog, int which) {
+                    //destroy all data on roomDB and firebase
+                    database.base64ImageDao().deleteAll();
+                    //not suppose to delete from the client side but no $$ for own server
+                    db.collection(currentUser.getEmail()).get().addOnCompleteListener(new OnCompleteListener<QuerySnapshot>() {
+                        @Override
+                        public void onComplete(@NonNull Task<QuerySnapshot> task) {
+                            for (QueryDocumentSnapshot snapshot : task.getResult()) {
+                                db.collection(currentUser.getEmail()).document(snapshot.getId()).delete();
+                            }
+                            db.clearPersistence();
+                            signOut();
+                        }
+                    });
+                }
+            });
+            builder.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+                @Override
+                public void onClick(DialogInterface dialog, int which) {
+                    //do nothing here
+                    dialog.dismiss();
+                }
+            });
+            AlertDialog dialog = builder.show();
         });
     }
 
@@ -391,20 +416,20 @@ public class CameraActivity extends AppCompatActivity {
 
     @SuppressLint("RestrictedApi")
     private void startCamera() {
-            initCamera();
-            toggleButton.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    lens = lens == CameraX.LensFacing.FRONT ? CameraX.LensFacing.BACK : CameraX.LensFacing.FRONT;
-                    try {
-                        // Only bind use cases if we can query a camera with this orientation
-                        CameraX.getCameraWithLensFacing(lens);
-                        initCamera();
-                    } catch (CameraInfoUnavailableException e) {
-                        e.printStackTrace();
-                    }
+        initCamera();
+        toggleButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                lens = lens == CameraX.LensFacing.FRONT ? CameraX.LensFacing.BACK : CameraX.LensFacing.FRONT;
+                try {
+                    // Only bind use cases if we can query a camera with this orientation
+                    CameraX.getCameraWithLensFacing(lens);
+                    initCamera();
+                } catch (CameraInfoUnavailableException e) {
+                    e.printStackTrace();
                 }
-            });
+            }
+        });
     }
 
     //method to start up camera and set up camera preview
@@ -417,10 +442,7 @@ public class CameraActivity extends AppCompatActivity {
                 .setLensFacing(lens);
 
         Camera2Config.Extender ext = new Camera2Config.Extender(pc);
-        //ext.setCaptureRequestOption(CaptureRequest.CONTROL_AE_TARGET_FPS_RANGE, new Range<Integer>(,99));
-
         Preview preview = new Preview(pc.build());
-
         preview.setOnPreviewOutputUpdateListener(output -> {
             ViewGroup vg = (ViewGroup) textureView.getParent();
             vg.removeView(textureView);
@@ -440,17 +462,6 @@ public class CameraActivity extends AppCompatActivity {
         CameraX.bindToLifecycle(this, preview, imageAnalysis);
     }
 
-    //not required unless you want to save the bitmap to external storage
-//    public String getBatchDirectoryName() {
-////        String app_folder_path = "";
-////        app_folder_path = Environment.getExternalStorageDirectory().toString() + "/images";
-////        File dir = new File(app_folder_path);
-////        if (!dir.exists() && !dir.mkdirs()) {
-////            //do something here
-////        }
-////        return app_folder_path;
-////    }
-
     private boolean allPermissionsGranted(){
         for(String permission : REQUIRED_PERMISSIONS){
             if(ContextCompat.checkSelfPermission(this, permission) != PackageManager.PERMISSION_GRANTED){
@@ -462,7 +473,6 @@ public class CameraActivity extends AppCompatActivity {
 
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
-
         if(requestCode == REQUEST_CODE_PERMISSIONS){
             if(allPermissionsGranted()){
                 startCamera();
@@ -498,6 +508,6 @@ public class CameraActivity extends AppCompatActivity {
         Intent intent = new Intent(CameraActivity.this, LoginActivity.class);
         startActivity(intent);
         finish();
-
     }
+
 }

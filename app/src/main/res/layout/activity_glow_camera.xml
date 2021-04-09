@@ -26,45 +26,6 @@
      app:layout_constraintTop_toTopOf="parent" />
 
  <Button
-     android:id="@+id/cameraOnOffBtn"
-     android:layout_width="wrap_content"
-     android:layout_height="wrap_content"
-     android:layout_marginEnd="16dp"
-     android:text="Start"
-     app:layout_constraintBottom_toBottomOf="@+id/takePictureBtn"
-     app:layout_constraintEnd_toStartOf="@+id/takePictureBtn"
-     app:layout_constraintTop_toTopOf="@+id/takePictureBtn" />
-
- <Button
-     android:id="@+id/takePictureBtn"
-     android:layout_width="wrap_content"
-     android:layout_height="wrap_content"
-     android:layout_marginBottom="16dp"
-     android:text="Take Picture"
-     app:layout_constraintBottom_toBottomOf="parent"
-     app:layout_constraintEnd_toEndOf="@+id/splitCameraView"
-     app:layout_constraintStart_toStartOf="@+id/splitCameraView" />
-
- <Button
-     android:id="@+id/videoBtn"
-     android:layout_width="wrap_content"
-     android:layout_height="wrap_content"
-     android:layout_marginStart="16dp"
-     android:text="Start Video"
-     app:layout_constraintStart_toEndOf="@+id/takePictureBtn"
-     app:layout_constraintTop_toTopOf="@+id/takePictureBtn" />
-
- <ImageView
-     android:id="@+id/imageView2"
-     android:layout_width="134dp"
-     android:layout_height="91dp"
-     android:layout_marginStart="24dp"
-     android:layout_marginBottom="16dp"
-     app:layout_constraintBottom_toBottomOf="parent"
-     app:layout_constraintStart_toStartOf="parent"
-     tools:srcCompat="@tools:sample/avatars" />
-
- <Button
      android:id="@+id/offGlowButton"
      style="@style/Widget.App.Button.OutlinedButton.IconOnly"
      android:layout_width="wrap_content"

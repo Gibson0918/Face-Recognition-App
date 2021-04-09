@@ -84,7 +84,7 @@ public class EditActivity extends AppCompatActivity {
                         //update the firestore with the new name and relationship
                         newName = nameTextField.getText().toString();
                         newRelationship = relationshipTextField.getText().toString();
-                        dbRef.update("Name", newName, "RelationShip", newRelationship);
+                        dbRef.update("Name", newName, "Relationship", newRelationship);
                         Intent backIntent = new Intent(EditActivity.this, AlbumActivity.class);
                         backIntent.putStringArrayListExtra("nameList", (ArrayList<String>) nameList);
                         backIntent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);

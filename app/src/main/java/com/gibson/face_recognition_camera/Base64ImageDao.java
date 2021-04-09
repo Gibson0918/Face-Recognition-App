@@ -24,4 +24,8 @@ public interface Base64ImageDao {
 
     @Query("SELECT Base64_String FROM Base64Image WHERE docID =:docID")
     String getImage(String docID);
+
+    //delete all rows from table
+    @Query("DELETE FROM Base64Image")
+    void deleteAll();
 }

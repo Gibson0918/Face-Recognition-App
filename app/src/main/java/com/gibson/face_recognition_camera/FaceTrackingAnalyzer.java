@@ -69,7 +69,6 @@ public class FaceTrackingAnalyzer extends CameraActivity implements ImageAnalysi
     private Canvas canvas;
     private float widthScaleFactor = 1.0f;
     private float heightScaleFactor = 1.0f;
-    //private CameraX.LensFacing lens;
     private FirebaseVisionImage fbImage;
     private FloatingActionButton addFab;
     private Activity context;
@@ -80,11 +79,9 @@ public class FaceTrackingAnalyzer extends CameraActivity implements ImageAnalysi
     private FirebaseFirestore db;
     private String emailAddr;
 
-
     public FaceTrackingAnalyzer(TextureView textureView, ImageView imageView, FloatingActionButton addFab, Activity context, FaceNet faceNet, List<FaceRecognition> faceRecognitionList, FirebaseFirestore db, String emailAddr) {
         this.textureView = textureView;
         this.imageView = imageView;
-        //this.lens = lens;
         this.addFab = addFab;
         this.context = context;
         this.faceNet = faceNet;
@@ -98,14 +95,11 @@ public class FaceTrackingAnalyzer extends CameraActivity implements ImageAnalysi
         if (image == null || image.getImage() == null) {
             return;
         }
-
         int rotation = degreesToFirebaseRotation(rotationDegrees);
         fbImage = FirebaseVisionImage.fromMediaImage(image.getImage(), rotation);
-
         initDrawingUtils();
         initDetector(image);
     }
-
 
     @RequiresApi(api = Build.VERSION_CODES.N)
     private synchronized void initDetector(ImageProxy imageProxy) {
@@ -117,111 +111,99 @@ public class FaceTrackingAnalyzer extends CameraActivity implements ImageAnalysi
         FirebaseVisionFaceDetector faceDetector = FirebaseVision.getInstance().getVisionFaceDetector(detectorOptions);
         //retrieve a list of faces detected (firebaseVisionFaces) and perform facial recognition
         faceDetector.detectInImage(fbImage).addOnSuccessListener(firebaseVisionFaces -> {
-            if (!firebaseVisionFaces.isEmpty()) {
-                    //comparing face embeddings here
-                    new Thread(()->{
-                        try {
-                            processFaces(firebaseVisionFaces);
-                            runOnUiThread(new Runnable() {
+
+            //comparing face embeddings here
+            new Thread(()->{
+                try {
+                    processFaces(firebaseVisionFaces);
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            imageView.setImageBitmap(abitmap);
+                        }
+                    });
+                } catch (ExecutionException e) {
+                    e.printStackTrace();
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }).start();
+
+            addFab.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View view) {
+                    //only allow faces to be added when there is only 1  face in the frame
+                    if(firebaseVisionFaces.size() == 1) {
+                        FirebaseVisionFace face = firebaseVisionFaces.get(0);
+                        Bitmap croppedFaceBitmap = getFaceBitmap(face);
+                        Bitmap originalFrame = fbImage.getBitmap();
+                        if(croppedFaceBitmap != null) {
+                            LayoutInflater inflater = context.getLayoutInflater();
+                            View dialogLayout = inflater.inflate(R.layout.add_face_dialog, null);
+                            ImageView ivFace = dialogLayout.findViewById(R.id.dlg_image);
+                            TextView tvTitle = dialogLayout.findViewById(R.id.dlg_title);
+                            EditText etName = dialogLayout.findViewById(R.id.dlg_input);
+                            TextInputLayout relationshipTIL = dialogLayout.findViewById(R.id.relationshipInputLayout);
+                            AutoCompleteTextView relationshipACTV = dialogLayout.findViewById(R.id.relationshipAutoCompleteTextView);
+                            ArrayList<String> relationshipArrayList = new ArrayList<String>();
+                            relationshipArrayList.add("Family & Relatives");
+                            relationshipArrayList.add("Friends");
+                            relationshipArrayList.add("Colleagues");
+                            relationshipArrayList.add("Others");
+                            ArrayAdapter<String> arrayAdapter = new ArrayAdapter<>(context, R.layout.support_simple_spinner_dropdown_item, relationshipArrayList);
+                            relationshipACTV.setAdapter(arrayAdapter);
+                            relationshipACTV.setThreshold(1);
+                            tvTitle.setText("Add Face");
+                            ivFace.setImageBitmap(croppedFaceBitmap);
+                            etName.setHint("Input Name");
+
+                            AlertDialog builder = new AlertDialog.Builder(context).setView(dialogLayout).setPositiveButton("Ok", null).create();
+                            builder.setOnShowListener(new DialogInterface.OnShowListener() {
                                 @Override
-                                public void run() {
-                                    imageView.setImageBitmap(abitmap);
+                                public void onShow(DialogInterface dialog) {
+                                    Button button = ((AlertDialog) dialog).getButton(AlertDialog.BUTTON_POSITIVE);
+                                    button.setOnClickListener(new View.OnClickListener() {
+                                        @Override
+                                        public void onClick(View v) {
+                                            String name = etName.getText().toString();
+
+                                            String relationship = relationshipACTV.getText().toString();
+                                            if (name.isEmpty() || relationship.isEmpty() ) {
+                                                Snackbar.make(v,"Please fill in all details!", Snackbar.LENGTH_SHORT).show();
+                                            }
+                                            else {
+                                                ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+                                                originalFrame.compress(Bitmap.CompressFormat.PNG, 100, byteArrayOutputStream);
+                                                byte[] byteArray = byteArrayOutputStream .toByteArray();
+                                                String encoded = Base64.encodeToString(byteArray, Base64.DEFAULT);
+                                                faceRecognitionList = faceNet.addFaceToRecognitionList(name, encoded ,croppedFaceBitmap, faceRecognitionList, db, emailAddr, relationship, context);
+                                                dialog.dismiss();
+                                            }
+                                        }
+                                    });
                                 }
                             });
-                        } catch (ExecutionException e) {
-                            e.printStackTrace();
-                        } catch (InterruptedException e) {
-                            e.printStackTrace();
-                        }
-                    }).start();
-                    //processFaces(firebaseVisionFaces);
-                /*runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        imageView.setImageBitmap(abitmap);
-                    }
-                });*/
-                   // imageView.setImageBitmap(abitmap);
-
-
-                addFab.setOnClickListener(new View.OnClickListener() {
-                    @Override
-                    public void onClick(View view) {
-                        //only allow faces to be added when there is only 1  face in the frame
-                        if(firebaseVisionFaces.size() == 1) {
-                            FirebaseVisionFace face = firebaseVisionFaces.get(0);
-                            Bitmap croppedFaceBitmap = getFaceBitmap(face);
-                            Bitmap originalFrame = fbImage.getBitmap();
-                            if(croppedFaceBitmap != null) {
-                                LayoutInflater inflater = context.getLayoutInflater();
-                                View dialogLayout = inflater.inflate(R.layout.add_face_dialog, null);
-                                ImageView ivFace = dialogLayout.findViewById(R.id.dlg_image);
-                                TextView tvTitle = dialogLayout.findViewById(R.id.dlg_title);
-                                EditText etName = dialogLayout.findViewById(R.id.dlg_input);
-
-                                TextInputLayout relationshipTIL = dialogLayout.findViewById(R.id.relationshipInputLayout);
-                                AutoCompleteTextView relationshipACTV = dialogLayout.findViewById(R.id.relationshipAutoCompleteTextView);
-                                ArrayList<String> relationshipArrayList = new ArrayList<String>();
-                                relationshipArrayList.add("Family & Relatives");
-                                relationshipArrayList.add("Friends");
-                                relationshipArrayList.add("Colleagues");
-                                relationshipArrayList.add("Others");
-                                ArrayAdapter<String> arrayAdapter = new ArrayAdapter<>(context, R.layout.support_simple_spinner_dropdown_item, relationshipArrayList);
-                                relationshipACTV.setAdapter(arrayAdapter);
-                                relationshipACTV.setThreshold(1);
-                                tvTitle.setText("Add Face");
-                                ivFace.setImageBitmap(croppedFaceBitmap);
-                                etName.setHint("Input Name");
-
-                                AlertDialog builder = new AlertDialog.Builder(context).setView(dialogLayout).setPositiveButton("Ok", null).create();
-                                builder.setOnShowListener(new DialogInterface.OnShowListener() {
-                                    @Override
-                                    public void onShow(DialogInterface dialog) {
-                                        Button button = ((AlertDialog) dialog).getButton(AlertDialog.BUTTON_POSITIVE);
-                                        button.setOnClickListener(new View.OnClickListener() {
-                                            @Override
-                                            public void onClick(View v) {
-                                                String name = etName.getText().toString();
-
-                                                String relationship = relationshipACTV.getText().toString();
-                                                if (name.isEmpty() || relationship.isEmpty() ) {
-                                                    Snackbar.make(v,"Please fill in all details!", Snackbar.LENGTH_SHORT).show();
-                                                }
-                                                else {
-                                                    ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-                                                    originalFrame.compress(Bitmap.CompressFormat.PNG, 100, byteArrayOutputStream);
-                                                    byte[] byteArray = byteArrayOutputStream .toByteArray();
-                                                    String encoded = Base64.encodeToString(byteArray, Base64.DEFAULT);
-                                                    faceRecognitionList = faceNet.addFaceToRecognitionList(name, encoded ,croppedFaceBitmap, faceRecognitionList, db, emailAddr, relationship, context);
-                                                    dialog.dismiss();
-                                                }
-                                            }
-                                        });
-                                    }
-                                });
-                                builder.show();
-                            }
-                            else {
-                                Toast.makeText(context,"Please try again, error capturing face image!", Toast.LENGTH_LONG).show();
-                            }
+                            builder.show();
                         }
                         else {
-                            Toast.makeText(context,"Please ensure that only 1 face is shown!", Toast.LENGTH_LONG).show();
+                            Toast.makeText(context,"Please try again, error capturing face image!", Toast.LENGTH_LONG).show();
                         }
                     }
-                });
-            }
-            else {
-                //clear the canvas/drawings of rect boxes when there are no faces detected
-                canvas.drawColor(Color.TRANSPARENT, PorterDuff.Mode.MULTIPLY);
-                //imageView.setImageBitmap(abitmap);
-            }
-        }).addOnFailureListener(new OnFailureListener() {
+                    else {
+                        Toast.makeText(context,"Please ensure that only 1 face is shown!", Toast.LENGTH_LONG).show();
+                    }
+                }
+            });
+
+
+        }).addOnCompleteListener(new OnCompleteListener<List<FirebaseVisionFace>>() {
             @Override
-            public void onFailure(@NonNull Exception e) {
-                // not required to display anything here
+            public void onComplete(@NonNull Task<List<FirebaseVisionFace>> task) {
+                canvas.drawColor(Color.TRANSPARENT, PorterDuff.Mode.MULTIPLY);
+                imageProxy.close();
             }
-        }).addOnCompleteListener(task -> imageProxy.close());
+        });
+
     }
 
     //setting up the paint and canvas for the drawing of rect boxes
@@ -238,8 +220,6 @@ public class FaceTrackingAnalyzer extends CameraActivity implements ImageAnalysi
             drawPaint.setStyle(Paint.Style.FILL_AND_STROKE);
             drawPaint.setStrokeWidth(2f);
             drawPaint.setTextAlign(Paint.Align.CENTER);
-            //to set opacity of text background
-            //drawPaint.setAlpha(200);
             textPaint = new Paint();
             textPaint.setColor(Color.BLACK);
             textPaint.setStyle(Paint.Style.FILL_AND_STROKE);
@@ -257,7 +237,6 @@ public class FaceTrackingAnalyzer extends CameraActivity implements ImageAnalysi
     @RequiresApi(api = Build.VERSION_CODES.N)
     private synchronized Bitmap processFaces(List<FirebaseVisionFace> faces) throws ExecutionException, InterruptedException {
         int count =0;
-        //canvas.drawColor(Color.TRANSPARENT, PorterDuff.Mode.CLEAR);
         for (int i =0; i<faces.size(); i++) {
             Bitmap croppedFaceBitmap = getFaceBitmap(faces.get(i));
             if (croppedFaceBitmap == null) {
@@ -278,7 +257,6 @@ public class FaceTrackingAnalyzer extends CameraActivity implements ImageAnalysi
                             translateY(faces.get(i).getBoundingBox().top-5),
                             textPaint);
 
-                    //Log.d("face",recognizeFace.getName());
                     //draw a rect box around each face
                     box = new Rect((int) translateX(faces.get(i).getBoundingBox().left),
                             (int) translateY(faces.get(i).getBoundingBox().top),
@@ -288,7 +266,6 @@ public class FaceTrackingAnalyzer extends CameraActivity implements ImageAnalysi
                     count+=1;
                 }
             }
-
         }
         return abitmap;
     }
@@ -324,7 +301,6 @@ public class FaceTrackingAnalyzer extends CameraActivity implements ImageAnalysi
             faceBitmap = Bitmap.createBitmap(originalFrame, face.getBoundingBox().left, face.getBoundingBox().top, face.getBoundingBox().right - face.getBoundingBox().left, face.getBoundingBox().bottom - face.getBoundingBox().top);
         }
         catch (IllegalArgumentException  e){
-            // Log.d("Err123",e.getMessage());
         }
         return faceBitmap;
     }

@@ -29,7 +29,9 @@ import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
 import com.bumptech.glide.Glide;
+import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.OnSuccessListener;
+import com.google.android.gms.tasks.Task;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
@@ -64,12 +66,11 @@ import java.util.concurrent.Future;
 
 public class GlowCameraActivity extends AppCompatActivity {
 
-    SplitCameraView mSplitCameraView;
-    String[] RequiredPermissions = new String[]{ Manifest.permission.RECORD_AUDIO, Manifest.permission.WRITE_EXTERNAL_STORAGE};
-    FirebaseVisionFaceDetector faceDetector;
-    FirebaseVisionImage firebaseVisionImage;
-    boolean unset;
-
+    private SplitCameraView mSplitCameraView;
+    private String[] RequiredPermissions = new String[]{ Manifest.permission.RECORD_AUDIO, Manifest.permission.WRITE_EXTERNAL_STORAGE};
+    private FirebaseVisionFaceDetector faceDetector;
+    private FirebaseVisionImage firebaseVisionImage;
+    private boolean unset;
     private ImageView rectOverlay;
     private Bitmap abitmap;
     private Canvas canvas;
@@ -89,8 +90,6 @@ public class GlowCameraActivity extends AppCompatActivity {
     private int width, height;
     private FirebaseVisionImageMetadata firebaseVisionImageMetadata;
 
-
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -109,7 +108,6 @@ public class GlowCameraActivity extends AppCompatActivity {
         assert currentUser != null;
         emailAddr = currentUser.getEmail();
         mSplitCameraView = (SplitCameraView) findViewById(R.id.splitCameraView);
-
         offButton = findViewById(R.id.offGlowButton);
         offButton.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -150,7 +148,6 @@ public class GlowCameraActivity extends AppCompatActivity {
     }
 
     public synchronized void init(){
-
         FirebaseVisionFaceDetectorOptions detectorOptions = new FirebaseVisionFaceDetectorOptions
                 .Builder()
                 .enableTracking()
@@ -163,7 +160,6 @@ public class GlowCameraActivity extends AppCompatActivity {
         }
     }
 
-
     public void askForPermission(){
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE)
                 != PackageManager.PERMISSION_GRANTED||ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO)
@@ -174,9 +170,7 @@ public class GlowCameraActivity extends AppCompatActivity {
 
     public boolean permissionReady(){
         ArrayList<String> PermissionsMissing = new ArrayList();
-
         StringBuilder sb = new StringBuilder("");
-
         for (int i = 0; i < RequiredPermissions.length; i++) {
             if (ContextCompat.checkSelfPermission(this, RequiredPermissions[i]) != PackageManager.PERMISSION_GRANTED) {
                 PermissionsMissing.add(RequiredPermissions[i]);
@@ -190,13 +184,9 @@ public class GlowCameraActivity extends AppCompatActivity {
         return true;
     }
 
-
-
-
-
-    public void setVideo(FirebaseVisionFaceDetector faceDetector){
+    public synchronized void setVideo(FirebaseVisionFaceDetector faceDetector){
         SplitCamera.getInstance(this).setFrameFormat(CameraHelper.FRAME_FORMAT_MJPEG);
-        SplitCamera.getInstance(this).setPreviewSize(SplitCamera.CameraDimension.DIMENSION_1280_720);
+        SplitCamera.getInstance(this).setPreviewSize(SplitCamera.CameraDimension.DIMENSION_1600_1200);
         SplitCamera.getInstance(this).start(findViewById(R.id.splitCameraView));
 
         /* Insert code segment below if you want to monitor the USB Camera connection status */
@@ -213,13 +203,11 @@ public class GlowCameraActivity extends AppCompatActivity {
                         .setRotation(FirebaseVisionImageMetadata.ROTATION_0)
                         .build();
                 MDToast.makeText(GlowCameraActivity.this, "Camera connected", MDToast.LENGTH_SHORT, MDToast.TYPE_SUCCESS).show();
-
             }
 
             @Override
             public void onDisconnected() {
                 MDToast.makeText(GlowCameraActivity.this, "Camera disconnected", MDToast.LENGTH_SHORT, MDToast.TYPE_INFO).show();
-
             }
 
             @Override
@@ -228,76 +216,52 @@ public class GlowCameraActivity extends AppCompatActivity {
                     MDToast.makeText(GlowCameraActivity.this, "There is no connecting MAD Gaze Cameras.", MDToast.LENGTH_SHORT, MDToast.TYPE_ERROR).show();
                 else
                     MDToast.makeText(GlowCameraActivity.this, "MAD Gaze Camera Init Failure (Error=" + code + ")", MDToast.LENGTH_SHORT, MDToast.TYPE_ERROR).show();
-
             }
         });
 
-        /* Insert code segment below if you want to retrieve the video frames in nv21 format */
         SplitCamera.getInstance(this).setOnPreviewFrameListener(new AbstractUVCCameraHandler.OnPreViewResultListener() {
             @Override
             public synchronized void onPreviewResult(byte[] bytes) {
-
-                    widthScaleFactor = canvas.getWidth() / (width * 1.0f);
-                    heightScaleFactor = canvas.getHeight() / (height * 1.0f);
-                    firebaseVisionImage = FirebaseVisionImage.fromByteArray(bytes,firebaseVisionImageMetadata);
-                    faceDetector.detectInImage(firebaseVisionImage).addOnSuccessListener(new OnSuccessListener<List<FirebaseVisionFace>>() {
-                        @Override
-                        public void onSuccess(List<FirebaseVisionFace> firebaseVisionFaces) {
-                            if(!firebaseVisionFaces.isEmpty()) {
-
-                                new Thread(()->{
-                                    try {
-                                        processFaces(firebaseVisionFaces);
-                                        runOnUiThread(new Runnable() {
-                                            @Override
-                                            public synchronized void run() {
-                                                rectOverlay.setImageBitmap(abitmap);
-                                            }
-                                        });
-                                    } catch (ExecutionException e) {
-                                        e.printStackTrace();
-                                    } catch (InterruptedException e) {
-                                        e.printStackTrace();
-                                    }
-                                }).start();
-
-                            }
-                            else {
+                widthScaleFactor = canvas.getWidth() / (width * 1.0f);
+                heightScaleFactor = canvas.getHeight() / (height * 1.0f);
+                firebaseVisionImage = FirebaseVisionImage.fromByteArray(bytes,firebaseVisionImageMetadata);
+                faceDetector.detectInImage(firebaseVisionImage).addOnSuccessListener(new OnSuccessListener<List<FirebaseVisionFace>>() {
+                    @Override
+                    public void onSuccess(List<FirebaseVisionFace> firebaseVisionFaces) {
+                        new Thread(()->{
+                            try {
+                                processFaces(firebaseVisionFaces);
                                 runOnUiThread(new Runnable() {
                                     @Override
-                                    public void run() {
-                                        canvas.drawColor(Color.TRANSPARENT, PorterDuff.Mode.MULTIPLY);
+                                    public synchronized void run() {
+                                        rectOverlay.setImageBitmap(abitmap);
                                     }
                                 });
-                                //canvas.drawColor(Color.TRANSPARENT, PorterDuff.Mode.MULTIPLY);
+                            } catch (ExecutionException e) {
+                                e.printStackTrace();
+                            } catch (InterruptedException e) {
+                                e.printStackTrace();
                             }
-                        }
-                    });
-                canvas.drawColor(Color.TRANSPARENT, PorterDuff.Mode.MULTIPLY);
+                        }).start();
+                    }
+                }).addOnCompleteListener(new OnCompleteListener<List<FirebaseVisionFace>>() {
+                    @Override
+                    public void onComplete(@NonNull Task<List<FirebaseVisionFace>> task) {
+                        canvas.drawColor(Color.TRANSPARENT, PorterDuff.Mode.MULTIPLY);
+                    }
+                });
             }
         });
     }
 
-    public String getBatchDirectoryName() {
-        String app_folder_path = "";
-        app_folder_path = Environment.getExternalStorageDirectory().toString() + "/images";
-        File dir = new File(app_folder_path);
-        if (!dir.exists() && !dir.mkdirs()) {
-            //do something here
-        }
-        return app_folder_path;
-    }
-
     private synchronized Bitmap processFaces(List<FirebaseVisionFace> faces) throws ExecutionException, InterruptedException {
-        //canvas.drawColor(Color.TRANSPARENT, PorterDuff.Mode.CLEAR);
         for (int i =0; i<faces.size(); i++) {
-            Log.d("Drawing rect process", "Drawed rect process");
             Bitmap croppedFaceBitmap = getFaceBitmap(faces.get(i));
             if (croppedFaceBitmap == null) {
                 return null;
             }
             else {
-                if(i <=4){
+                if(i <3){
                     Future<FaceRecognition> faceRecognitionFutureTask = faceNet.recognizeFace(croppedFaceBitmap, faceRecognitionList);
                     FaceRecognition recognizeFace = faceRecognitionFutureTask.get();
                     textPaint.getTextBounds(recognizeFace.getName(),0,recognizeFace.getName().length(),bounds);
@@ -311,7 +275,6 @@ public class GlowCameraActivity extends AppCompatActivity {
                             translateY(faces.get(i).getBoundingBox().top-5),
                             textPaint);
 
-                    //Log.d("face",recognizeFace.getName());
                     //draw a rect box around each face
                     box = new Rect((int) translateX(faces.get(i).getBoundingBox().left),
                             (int) translateY(faces.get(i).getBoundingBox().top),
@@ -332,7 +295,7 @@ public class GlowCameraActivity extends AppCompatActivity {
         return x * widthScaleFactor;
     }
 
-    private void initDrawingUtils() {
+    private synchronized void initDrawingUtils() {
         new Thread(() -> {
             abitmap = Bitmap.createBitmap(rectOverlay.getWidth(), rectOverlay.getHeight(), Bitmap.Config.ARGB_8888);
             canvas = new Canvas(abitmap);
@@ -360,25 +323,15 @@ public class GlowCameraActivity extends AppCompatActivity {
     }
 
     private synchronized Bitmap getFaceBitmap(FirebaseVisionFace face) {
-        Bitmap originalFrame = firebaseVisionImage.getBitmap();
+        //Bitmap originalFrame = firebaseVisionImage.getBitmap();
         Bitmap faceBitmap = null;
         try {
-            faceBitmap = Bitmap.createBitmap(originalFrame, face.getBoundingBox().left, face.getBoundingBox().top, face.getBoundingBox().right - face.getBoundingBox().left, face.getBoundingBox().bottom - face.getBoundingBox().top);
+            faceBitmap = Bitmap.createBitmap(firebaseVisionImage.getBitmap(), face.getBoundingBox().left, face.getBoundingBox().top, face.getBoundingBox().right - face.getBoundingBox().left, face.getBoundingBox().bottom - face.getBoundingBox().top);
         } catch (IllegalArgumentException e) {
             // Log.d("Err123",e.getMessage());
         }
         return faceBitmap;
     }
-
-
-
-
-
-
-
-
-
-
 
     @Override
     protected void onDestroy() {
