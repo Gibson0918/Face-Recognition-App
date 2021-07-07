@@ -1,2 +1,0 @@
-Alias: CameraX_App
-keystore pw: Democracy
